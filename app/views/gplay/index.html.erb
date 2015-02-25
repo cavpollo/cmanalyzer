@@ -1,0 +1,83 @@
+<!--
+   Copyright (C) 2013 Google Inc.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<div id="supercontainer">
+  <h2>The Play Games Hide/Unhide-o-matic!</h2>
+
+  <p>Please sign in with an account that has developer permissions
+	for your app.</p>
+
+  <div>
+      <span id="signinButton" style="display: none;">
+        <span
+		class="g-signin"
+		data-callback="signinCallback"
+		data-clientid="<%= Rails.application.secrets.gplay_client_id %>"
+		data-cookiepolicy="single_host_origin"
+		data-scope="https://www.googleapis.com/auth/games">
+        </span>
+      </span>
+  </div>
+  <div id="loggedInUI" style="display: none;">
+	<div>
+	  <p>
+		<select id="selector">
+		  <option value="<%= Rails.application.secrets.leaderboard_id_arcade_slow %>">Arcade Slow</option>
+		  <option value="<%= Rails.application.secrets.leaderboard_id_arcade_normal %>">Arcade Normal</option>
+		  <option value="<%= Rails.application.secrets.leaderboard_id_arcade_fast %>">Arcade Fast</option>
+		  <option value="<%= Rails.application.secrets.leaderboard_id_madness %>">Madness</option>
+		  <option value="<%= Rails.application.secrets.leaderboard_id_time_trial %>">Time Trial</option>
+		  <option value="<%= Rails.application.secrets.leaderboard_id_bar_jump %>">Bar Jump</option>
+		  <option value="<%= Rails.application.secrets.leaderboard_id_time_jump %>">Time Jump</option>
+		</select>
+		&nbsp;&nbsp;&nbsp;
+		<button type="submit" onClick="showHighScoreList(null)">Refresh high scores</button>
+	  </p>
+	  <div id="highScoreListDiv"></div>
+	  <p>
+		<button type="submit" onClick="showHiddenPlayers(null)">Refresh hidden players</button>
+	  </p>
+	  <div id="hiddenPlayersDiv"></div>
+	</div>
+	<br/>
+	<br/>
+	<div>
+	  <span><b>Hide</b> this player Id:</span>
+	  <input id="playerIdHideInput" style="width:300px;"></input>
+	  <button type="submit" onClick="hidePlayer()">Hide</button>
+	</div>
+
+	<div>
+	  <span><b>Unhide</b> this player Id:</span>
+	  <input id="playerIdUnhideInput" style="width:300px;"></input>
+	  <button type="submit" onClick="unhidePlayer()">Unhide</button>
+	</div>
+
+	<p>Remove access to this app by going to:
+	  <a href="http://plus.google.com/apps">your app controls page.</a>
+	</p>
+  </div>
+
+  <div id='errorDiv'></div>
+</div>
+
+<!-- Place this asynchronous JavaScript just before your </body> tag -->
+<script type="text/javascript">
+	(function() {
+		var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+		po.src = 'https://apis.google.com/js/client:plusone.js?onload=onLoadCallback';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+	})();
+</script>

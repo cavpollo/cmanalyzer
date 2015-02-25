@@ -1,0 +1,2 @@
+module GplayHelper
+end
