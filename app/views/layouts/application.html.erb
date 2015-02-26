@@ -2,22 +2,9 @@
 <html>
 <head>
   <title>Cmanalyzer</title>
-  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
-  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= stylesheet_link_tag    'application', params[:controller], media: 'all', 'data-turbolinks-track' => true %>
+  <%= javascript_include_tag 'application', params[:controller], 'data-turbolinks-track' => true %>
   <%= csrf_meta_tags %>
-  <script type="application/javascript">
-	  var APP_ID = '<%= Rails.application.secrets.app_id %>';
-	  var LEADERBOARD_ID = '<%= Rails.application.secrets.leaderboard_id_arcade_slow %>';
-
-	  $( document ).ready(function() {
-		  $('#selector').on('change', function() {
-			  LEADERBOARD_ID = $('#selector').find(":selected").val();
-		  });
-		  /*$.growl('<strong>SELECT</strong>', {
-			  type: 'success'
-		  });*/
-	  });
-  </script>
 </head>
 <body>
 <nav class="navbar navbar-default">

@@ -16,4 +16,3 @@
 //= require turbolinks
 //= require bootstrap-growl.min
 //= require d3.min
-//= require_tree .
