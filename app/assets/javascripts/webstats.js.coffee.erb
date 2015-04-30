@@ -3,43 +3,75 @@
 # You can use CoffeeScript in this file: http://coffeescript.org/
 
 Holder.add_theme 'white',
-  background: '#fff'
-  foreground: '#a7a7a7'
-  size: 10
+	background: '#fff'
+	foreground: '#a7a7a7'
+	size: 10
 
-run_query_1 = (client, t_frame) ->
-  query_1 = new (Keen.Query)('count',
-    eventCollection: 'artSeen'
-    groupBy: 'picName'
-    timeframe: t_frame)
+run_query_1 = (client, t_frame, type) ->
+	query_1 = new (Keen.Query)('count',
+		eventCollection: 'artSeen'
+		groupBy: 'picName'
+		timeframe: t_frame)
 
-  client.draw query_1, document.getElementById('chart01'),
-    chartType: 'piechart'
-    title: false
-    height: 250
-    width: 'auto'
-    chartOptions:
-      chartArea:
-        height: '85%'
-        left: '5%'
-        top: '5%'
-        width: '80%'
-      pieHole: .4
-  return
+	chart_specs =
+		chartType: type
+		title: false
+		height: 250
+		width: 'auto'
+
+	if type == 'piechart'
+		chart_specs['chartOptions'] =
+			chartArea:
+				height: '80%'
+				left: '5%'
+				top: '5%'
+				width: '90%'
+				pieHole: .4
+	else
+		if type == 'barchart'
+			chart_specs['chartOptions'] =
+				animation:
+					duration: 1000
+					easing: 'out'
+					startup: true
+				isStacked: false
+				chartArea:
+					height: '80%'
+					left: '15%'
+					top: '5%'
+					width: '90%'
+				legend:
+					position: 'none'
+				vAxis:
+					ticks: 'auto'
+		else
+			if type == 'columnchart'
+				chart_specs['chartOptions'] =
+					chartArea:
+						height: '80%'
+						left: '5%'
+						top: '5%'
+						width: '90%'
+					isStacked: false
+
+
+	client.draw query_1, document.getElementById('chart01'), chart_specs
+
+	return
 
 $(document).ready ->
-  client = new Keen(
-    projectId: '<%= Rails.application.secrets.keen_projectid %>',
-    readKey: '<%= Rails.application.secrets.keen_readkey %>',
-    protocol: 'https',
-    host: 'api.keen.io/3.0',
-    requestType: 'jsonp')
+	client = new Keen(
+		projectId: '<%= Rails.application.secrets.keen_projectid %>',
+		readKey: '<%= Rails.application.secrets.keen_readkey %>',
+		protocol: 'https',
+		host: 'api.keen.io/3.0',
+		requestType: 'jsonp')
 
-  if $('.webstats.art').length
-    run_query_1 client, 'this_1_months'
+	if $('.webstats.art').length
+		run_query_1 client, 'this_1_months', 'barchart'
 
-    $('#a').click ->
-      console.log 'a'
-      run_query_1 client, 'this_1_weeks'
-      return
-    return
+		$('#a').click ->
+			console.log 'a'
+			run_query_1 client, 'this_1_weeks', 'piechart'
+			return
+		return
