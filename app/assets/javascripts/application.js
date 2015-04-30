@@ -16,3 +16,5 @@
 //= require turbolinks
 //= require bootstrap-growl.min
 //= require d3.min
+//= require keen.min
+//= require holder

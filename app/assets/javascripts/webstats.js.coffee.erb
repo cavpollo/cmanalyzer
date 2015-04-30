@@ -1,0 +1,45 @@
+# Place all the behaviors and hooks related to the matching controller here.
+# All this logic will automatically be available in application.js.
+# You can use CoffeeScript in this file: http://coffeescript.org/
+
+Holder.add_theme 'white',
+  background: '#fff'
+  foreground: '#a7a7a7'
+  size: 10
+
+run_query_1 = (client, t_frame) ->
+  query_1 = new (Keen.Query)('count',
+    eventCollection: 'artSeen'
+    groupBy: 'picName'
+    timeframe: t_frame)
+
+  client.draw query_1, document.getElementById('chart01'),
+    chartType: 'piechart'
+    title: false
+    height: 250
+    width: 'auto'
+    chartOptions:
+      chartArea:
+        height: '85%'
+        left: '5%'
+        top: '5%'
+        width: '80%'
+      pieHole: .4
+  return
+
+$(document).ready ->
+  client = new Keen(
+    projectId: '<%= Rails.application.secrets.keen_projectid %>',
+    readKey: '<%= Rails.application.secrets.keen_readkey %>',
+    protocol: 'https',
+    host: 'api.keen.io/3.0',
+    requestType: 'jsonp')
+
+  if $('.webstats.art').length
+    run_query_1 client, 'this_1_months'
+
+    $('#a').click ->
+      console.log 'a'
+      run_query_1 client, 'this_1_weeks'
+      return
+    return
