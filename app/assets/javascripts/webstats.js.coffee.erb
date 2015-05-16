@@ -4,51 +4,6 @@
 
 all_json = {}
 
-run_query_art_count = (client, element, type) ->
-	if $('#time_span').val() && $('#time_span').val() != ''
-		query_art_count = new (Keen.Query)('count',
-			eventCollection: 'artSeen'
-			groupBy: 'picName'
-			timeframe: $('#time_span').val())
-	else
-		query_art_count = new (Keen.Query)('count',
-			eventCollection: 'artSeen'
-			groupBy: 'picName'
-			start: $('#time_span').attr 'fromDate'
-			end: $('#time_span').attr 'toDate')
-
-	$(element).append('<div class="loady"><div class="arc1"></div></div>');
-
-	client.run query_art_count, (err, res) ->
-		if err
-		else
-			if all_json[element] == undefined
-				all_json[element] = {}
-			else
-				all_json[element]['old-data'] = all_json[element]['data']
-			all_json[element]['type'] = type
-			all_json[element]['data'] = res.result
-			all_json[element]['data'].sort (a, b) ->
-				if (a.picName > b.picName)
-					return 1;
-				if (a.picName < b.picName)
-					return -1;
-				return 0
-
-			drawBar element
-		return
-
-	return
-
-resize_p = ->
-	$('.chart').each ->
-		if all_json['#'+$(this).attr('id')]
-			if all_json['#'+$(this).attr('id')]['type'] == 'barchart'
-				drawBar '#'+$(this).attr('id')
-			else
-				drawBar '#'+$(this).attr('id')
-	return
-
 ready = ->
 	client = new Keen(
 		projectId: '<%= Rails.application.secrets.keen_projectid %>',
@@ -56,6 +11,9 @@ ready = ->
 		protocol: 'https',
 		host: 'api.keen.io/3.0',
 		requestType: 'jsonp')
+
+	if $('body.webstats.art').length
+		run_query_art_count client, '#chart01', 'barchart'
 
 	$('#daterange span').html(moment().subtract(29, 'days').format('D/MMMM/YYYY') + ' - ' + moment().format('D/MMMM/YYYY'));
 	$('#daterange').daterangepicker {
@@ -125,14 +83,92 @@ ready = ->
 		run_query_art_count client, '#chart01', 'barchart'
 		return
 
-	if $('body.webstats.art').length
-		run_query_art_count client, '#chart01', 'barchart'
+	return
 
+$(document).ready ready
+$(window).resize resize_p
+$(document).on 'page:load', ready
+
+run_query_art_count = (client, element, type) ->
+	if $('#time_span').val() && $('#time_span').val() != ''
+		query_art_count = new (Keen.Query)('count',
+			eventCollection: 'artSeen'
+			groupBy: 'picName'
+			timeframe: $('#time_span').val())
+	else
+		query_art_count = new (Keen.Query)('count',
+			eventCollection: 'artSeen'
+			groupBy: 'picName'
+			start: $('#time_span').attr 'fromDate'
+			end: $('#time_span').attr 'toDate')
+
+	$(element).append('<div class="loady"><div class="arc1"></div></div>');
+
+	client.run query_art_count, (err, res) ->
+		if err
+		else
+			if all_json[element] == undefined
+				all_json[element] = {}
+				all_json[element]['data'] = {}
+			else
+				i = 0
+				while i < all_json[element]['data'].length
+					all_json[element]['data'][i]['old'] = all_json[element]['data'][i]['new']
+					all_json[element]['data'][i]['new'] = null
+					i++
+
+#			console.log all_json[element]
+
+			i = 0
+			while i < res.result.length
+				if all_json[element]['data'][res.result[i]['picName']] == undefined
+					all_json[element]['data'][res.result[i]['picName']] = {}
+					all_json[element]['data'][res.result[i]['picName']]['old'] = 0
+				all_json[element]['data'][res.result[i]['picName']]['new'] = res.result[i]['result']
+				i++
+
+#			console.log all_json[element]
+
+			i = 0
+			while i < all_json[element]['data'].length
+				if all_json[element]['data'][i]['old'] == 0 && all_json[element]['data'][i]['new'] == undefined
+					all_json[element]['data'].splice i, 1
+				else
+					i++
+
+#			console.log all_json[element]
+			
+#			all_json[element]['data'].sort (a, b) ->
+#				console.log 'aa'
+#				if (a.picName > b.picName)
+#					return 1;
+#				if (a.picName < b.picName)
+#					return -1;
+#				return 0
+
+			all_json[element]['type'] = type
+
+			drawBar element
+		return
+
+	return
+
+resize_p = ->
+	$('.chart').each ->
+		if all_json['#'+$(this).attr('id')]
+			if all_json['#'+$(this).attr('id')]['type'] == 'barchart'
+				drawBar '#'+$(this).attr('id')
+			else
+				drawBar '#'+$(this).attr('id')
 	return
 
 drawBar = (element) ->
 	$(element).html('');
-	dataset = all_json[element]['data']
+	dataset = $.map all_json[element]['data'],  (value, index) ->
+		thing = value
+		thing['name'] = index
+		return [thing];
+#	console.log dataset
 
 	g_h = 200
 	g_w = $(element).width()
@@ -141,35 +177,34 @@ drawBar = (element) ->
 
 	i = 0
 	total = 0
-	max = 0
+	old_max = 0
+	new_max = 0
 	while i < dataset.length
-		total += dataset[i].result
-		if dataset[i].result > max
-			max = dataset[i].result
+		total += dataset[i].new
+		if dataset[i].new > new_max
+			new_max = dataset[i].new
+		if dataset[i].old > old_max
+			old_max = dataset[i].old
 		i++
 
 	if svgChart
 		svgChart.remove()
 
 	svgChart = d3.select(element)
-		.append "svg"
-		.attr "width", g_w
-		.attr "height", g_h
+	.append "svg"
+	.attr "width", g_w
+	.attr "height", g_h
 
 	svgChart.selectAll "rect"
-		.data dataset
-		.enter()
-		.append "rect"
-		.attr "x", (d, i) ->
-			return (i_w + (g_o / (dataset.length - 1))) * i
-		.attr "y", (d) ->
-			return g_h - ((d.result / max) * g_h)
-		.attr "width", (d) ->
-			return i_w
-		.attr "height", (d) ->
-			return (d.result / max) * g_h
+	.data dataset
+	.enter()
+	.append "rect"
+	.attr "x", (d, i) ->
+		return (i_w + (g_o / (dataset.length - 1))) * i
+	.attr "y", (d) ->
+		return g_h - ((d.new / new_max) * g_h)
+	.attr "width", (d) ->
+		return i_w
+	.attr "height", (d) ->
+		return (d.new / new_max) * g_h
 	return
-
-$(document).ready ready
-$(window).resize resize_p
-$(document).on 'page:load', ready
