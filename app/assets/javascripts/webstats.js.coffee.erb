@@ -2,64 +2,54 @@
 # All this logic will automatically be available in application.js.
 # You can use CoffeeScript in this file: http://coffeescript.org/
 
-Holder.add_theme 'white',
-	background: '#fff'
-	foreground: '#a7a7a7'
-	size: 10
+all_json = {}
 
-run_query_1 = (client, t_frame, type) ->
-	query_1 = new (Keen.Query)('count',
-		eventCollection: 'artSeen'
-		groupBy: 'picName'
-		timeframe: t_frame)
-
-	chart_specs =
-		chartType: type
-		title: false
-		height: 250
-		width: 'auto'
-
-	if type == 'piechart'
-		chart_specs['chartOptions'] =
-			chartArea:
-				height: '80%'
-				left: '5%'
-				top: '5%'
-				width: '90%'
-				pieHole: .4
+run_query_art_count = (client, element, type) ->
+	if $('#time_span').val() && $('#time_span').val() != ''
+		query_art_count = new (Keen.Query)('count',
+			eventCollection: 'artSeen'
+			groupBy: 'picName'
+			timeframe: $('#time_span').val())
 	else
-		if type == 'barchart'
-			chart_specs['chartOptions'] =
-				animation:
-					duration: 1000
-					easing: 'out'
-					startup: true
-				isStacked: false
-				chartArea:
-					height: '80%'
-					left: '15%'
-					top: '5%'
-					width: '90%'
-				legend:
-					position: 'none'
-				vAxis:
-					ticks: 'auto'
+		query_art_count = new (Keen.Query)('count',
+			eventCollection: 'artSeen'
+			groupBy: 'picName'
+			start: $('#time_span').attr 'fromDate'
+			end: $('#time_span').attr 'toDate')
+
+	$(element).append('<div class="loady"><div class="arc1"></div></div>');
+
+	client.run query_art_count, (err, res) ->
+		if err
 		else
-			if type == 'columnchart'
-				chart_specs['chartOptions'] =
-					chartArea:
-						height: '80%'
-						left: '5%'
-						top: '5%'
-						width: '90%'
-					isStacked: false
+			if all_json[element] == undefined
+				all_json[element] = {}
+			else
+				all_json[element]['old-data'] = all_json[element]['data']
+			all_json[element]['type'] = type
+			all_json[element]['data'] = res.result
+			all_json[element]['data'].sort (a, b) ->
+				if (a.picName > b.picName)
+					return 1;
+				if (a.picName < b.picName)
+					return -1;
+				return 0
 
-
-	client.draw query_1, document.getElementById('chart01'), chart_specs
+			drawBar element
+		return
 
 	return
 
-$(document).ready ->
+resize_p = ->
+	$('.chart').each ->
+		if all_json['#'+$(this).attr('id')]
+			if all_json['#'+$(this).attr('id')]['type'] == 'barchart'
+				drawBar '#'+$(this).attr('id')
+			else
+				drawBar '#'+$(this).attr('id')
+	return
+
+ready = ->
 	client = new Keen(
 		projectId: '<%= Rails.application.secrets.keen_projectid %>',
 		readKey: '<%= Rails.application.secrets.keen_readkey %>',
@@ -67,11 +57,119 @@ $(document).ready ->
 		host: 'api.keen.io/3.0',
 		requestType: 'jsonp')
 
-	if $('.webstats.art').length
-		run_query_1 client, 'this_1_months', 'barchart'
+	$('#daterange span').html(moment().subtract(29, 'days').format('D/MMMM/YYYY') + ' - ' + moment().format('D/MMMM/YYYY'));
+	$('#daterange').daterangepicker {
+			format: 'DD/MM/YYYY',
+			startDate: moment().subtract(29, 'days'),
+			endDate: moment(),
+			minDate: '01/01/2012',
+			maxDate: '31/12/2015',
+			dateLimit: { days: 60 },
+			showDropdowns: true,
+			showWeekNumbers: true,
+			timePicker: false,
+			timePickerIncrement: 1,
+			timePicker12Hour: true,
+			ranges: {
+				'Today': [moment(), moment()],
+				'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+				'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+				'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+				'This Month': [moment().startOf('month'), moment().endOf('month')],
+				'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+			},
+			opens: 'left',
+			drops: 'down',
+			buttonClasses: ['btn', 'btn-sm'],
+			applyClass: 'btn-primary',
+			cancelClass: 'btn-default',
+			separator: ' to ',
+			locale: {
+				applyLabel: 'Submit',
+				cancelLabel: 'Cancel',
+				fromLabel: 'From',
+				toLabel: 'To',
+				customRangeLabel: 'Custom',
+				daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr','Sa'],
+				monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+				firstDay: 1
+			}
+		},
+		(start, end, label) ->
+			$('#daterange span').html(start.format('D/MMMM/YYYY') + ' - ' + end.format('D/MMMM/YYYY'));
 
-		$('#a').click ->
-			console.log 'a'
-			run_query_1 client, 'this_1_weeks', 'piechart'
+			$('.time-span').removeClass('btn-success')
+			$('#daterange').removeClass('btn-default')
+			$('.time-span').addClass('btn-default')
+			$('#daterange').addClass('btn-success')
+
+			$('#time_span').val ''
+			$('#time_span').attr 'fromDate', start.toISOString()
+			$('#time_span').attr 'toDate', end.toISOString()
+
+			run_query_art_count client, '#chart01', 'barchart'
 			return
+
+	$('.time-span').click ->
+		$('.time-span').removeClass('btn-success')
+		$('#pick_date').removeClass('btn-success')
+		$('.time-span').addClass('btn-default')
+		$('#pick_date').addClass('btn-default')
+		$(this).removeClass('btn-default')
+		$(this).addClass('btn-success')
+
+		$('#time_span').val $(this).attr('data-time')
+		$('#time_span').attr 'fromDate', ''
+		$('#time_span').attr 'toDate', ''
+
+		run_query_art_count client, '#chart01', 'barchart'
 		return
+
+	if $('body.webstats.art').length
+		run_query_art_count client, '#chart01', 'barchart'
+
+	return
+
+drawBar = (element) ->
+	$(element).html('');
+	dataset = all_json[element]['data']
+
+	g_h = 200
+	g_w = $(element).width()
+	g_o = g_w * 10 / 100
+	i_w = (g_w - g_o) / dataset.length
+
+	i = 0
+	total = 0
+	max = 0
+	while i < dataset.length
+		total += dataset[i].result
+		if dataset[i].result > max
+			max = dataset[i].result
+		i++
+
+	if svgChart
+		svgChart.remove()
+
+	svgChart = d3.select(element)
+		.append "svg"
+		.attr "width", g_w
+		.attr "height", g_h
+
+	svgChart.selectAll "rect"
+		.data dataset
+		.enter()
+		.append "rect"
+		.attr "x", (d, i) ->
+			return (i_w + (g_o / (dataset.length - 1))) * i
+		.attr "y", (d) ->
+			return g_h - ((d.result / max) * g_h)
+		.attr "width", (d) ->
+			return i_w
+		.attr "height", (d) ->
+			return (d.result / max) * g_h
+	return
+
+$(document).ready ready
+$(window).resize resize_p
+$(document).on 'page:load', ready

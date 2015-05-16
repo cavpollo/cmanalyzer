@@ -11,6 +11,7 @@
  * file per style scope.
  *
  *= require bootstrap_and_overrides
- *= require keen-dashboards
+ *= require daterangepicker-bs3
+ *= require animation
  *= require_self
  */
