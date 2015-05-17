@@ -98,11 +98,14 @@ run_query_art_count = (client, element, type) ->
 			groupBy: 'picName'
 			timeframe: $('#time_span').val())
 	else
+		console.log $('#time_span').attr 'fromdate'
+		console.log $('#time_span').attr 'todate'
 		query_art_count = new (Keen.Query)('count',
 			eventCollection: 'artSeen'
 			groupBy: 'picName'
-			start: $('#time_span').attr 'fromDate'
-			end: $('#time_span').attr 'toDate')
+			timeframe:
+				{start: $('#time_span').attr 'fromdate'
+				end: $('#time_span').attr 'todate'})
 
 	$(element).append '<div class="loady"><div class="arc1"></div></div>'
 
@@ -176,7 +179,7 @@ drawBar = (element, resize) ->
 
 	axis_XOffset = 60
 	axis_YOffset = 10
-	text_YOffset = 5
+	text_YOffset = 7
 	text_H = 25
 	graph_H = $(element).height() - (axis_YOffset + text_H + 2*text_YOffset)
 	graph_W = $(element).width() - (axis_XOffset)
@@ -216,20 +219,32 @@ drawBar = (element, resize) ->
 	scaleX = []
 	scaleXNames = []
 
-	if new_length <= 1
-		the_v = 0
+	if new_length == 0
+		scaleX.push 0
+		scaleX.push graph_W
+		scaleXNames.push 'No Results'
+		axis_width = graph_W
 	else
-		the_v = graph_Offset / (new_length - 1)
-	i=0
-	while i < new_length-1
-		scaleX.push (( (allbars_W/new_length) + the_v) * i)
-		scaleXNames.push dataset[i].name
-		scaleX.push ((allbars_W/new_length) * (i+1))
-		scaleXNames.push 'xxx'+i
-		i++
-	scaleX.push (( (allbars_W/new_length) + the_v) * i)
-	scaleX.push graph_W
-	scaleXNames.push dataset[i].name
+		if new_length <= 1
+			the_v = 0
+		else
+			the_v = graph_Offset / (new_length - 1)
+		c = 0
+		i = 0
+		while c < dataset.length
+			console.log dataset[c]
+			if dataset[c].new != null
+				console.log 'in' + dataset[c].name
+				scaleX.push (( (allbars_W/new_length) + the_v) * i)
+				scaleXNames.push dataset[i].name
+				if c < dataset.length
+					scaleX.push ((allbars_W/new_length) * (i+1))
+					scaleXNames.push 'xxx'+i
+				i++
+			c++
+
+		scaleX.push graph_W
+		axis_width = allbars_W/new_length
 
 	scaleXCount = d3.scale.ordinal()
 	.range scaleX
@@ -244,7 +259,7 @@ drawBar = (element, resize) ->
 	.attr "transform", "translate("+axis_XOffset+"," + (axis_YOffset+graph_H+1) + ")"
 	.call xAxis
 	.selectAll ".tick text"
-	.call wrap, (allbars_W/new_length)
+	.call wrap, axis_width
 
 	#Y SCALE
 	scaleYCount = d3.scale.linear()
@@ -309,11 +324,19 @@ drawBar = (element, resize) ->
 		.each 'start', (d, i) ->
 			d3.select this
 			.attr 'x', ->
+				j = 0
+				c = 0
+				while c < i
+					if dataset[c].old > 0
+						j++
+					c++
+
 				if old_length <= 1
 					v = 0
 				else
 					v = graph_Offset / (old_length - 1)
-				return (allbars_W/old_length + v) * i + axis_XOffset
+
+				return (allbars_W/old_length + v) * j + axis_XOffset
 			.attr 'y', ->
 				if old_max == 0
 					old_h_ratio = 0
@@ -343,11 +366,18 @@ drawBar = (element, resize) ->
 		rect_animated = rect
 
 	rect_animated.attr 'x', (d, i) ->
+		j = 0
+		c = 0
+		while c < i
+			if dataset[c].new > 0
+				j++
+			c++
+
 		if new_length <= 1
 			v = 0
 		else
 			v = graph_Offset / (new_length - 1)
-		return (allbars_W/new_length + v) * i + axis_XOffset
+		return (allbars_W/new_length + v) * j + axis_XOffset
 	.attr 'y', (d) ->
 		if new_max == 0
 			new_h_ratio = 0
