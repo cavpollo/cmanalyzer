@@ -114,8 +114,6 @@ run_query_art_count = (client, element, type) ->
 			groupBy: 'picName'
 			timeframe: $('#time_span').val())
 	else
-		console.log $('#time_span').attr 'fromdate'
-		console.log $('#time_span').attr 'todate'
 		query_art_count = new (Keen.Query)('count',
 			eventCollection: 'artSeen'
 			groupBy: 'picName'
@@ -161,14 +159,6 @@ run_query_art_count = (client, element, type) ->
 
 #			console.log all_json[element]
 
-#			all_json[element]['data'].sort (a, b) ->
-#				console.log 'aa'
-#				if (a.picName > b.picName)
-#					return 1;
-#				if (a.picName < b.picName)
-#					return -1;
-#				return 0
-
 			all_json[element]['type'] = type
 
 			drawBar element, false
@@ -200,10 +190,13 @@ drawBar = (element, resize) ->
 	graph_H = $(element).height() - (axis_YOffset + text_H + 2*text_YOffset)
 	graph_W = $(element).width() - (axis_XOffset)
 	graph_Offset = graph_W * 10 / 100
-	if new_length <= 1
-		allbars_W = graph_W
-	else
-		allbars_W = (graph_W - graph_Offset)
+
+	dataset.sort (a, b) ->
+		if (a.name > b.name)
+			return 1;
+		if (a.name < b.name)
+			return -1;
+		return 0
 
 	i = 0
 	total = 0
@@ -222,6 +215,11 @@ drawBar = (element, resize) ->
 		if dataset[i].new > 0
 			new_length++
 		i++
+
+	if new_length <= 1
+		allbars_W = graph_W
+	else
+		allbars_W = (graph_W - graph_Offset)
 
 	if old_length == 0
 		old_length = new_length
@@ -251,20 +249,25 @@ drawBar = (element, resize) ->
 
 		c = 0
 		i = 0
+		pending = false
 		while c < dataset.length
+			if pending
+				scaleX.push ((allbars_W/new_length) * (i+1))
+				scaleXNames.push 'xxx'+i
+				pending = false
 			if dataset[c].new != null
 				scaleX.push (( (allbars_W/new_length) + the_v) * i)
 				scaleXNames.push dataset[c].name
-
-				if c < dataset.length
-					scaleX.push ((allbars_W/new_length) * (i+1))
-					scaleXNames.push 'xxx'+i
-
+				pending = true
 				i++
 			c++
 
 		scaleX.push graph_W
 		axis_width = allbars_W/new_length
+
+	console.log scaleX
+	console.log scaleXNames
+	console.log axis_width
 
 	scaleXCount = d3.scale.ordinal()
 	.range scaleX
@@ -301,54 +304,58 @@ drawBar = (element, resize) ->
 	.enter()
 	.append 'rect'
 
+	ready = false
 	rect.on 'mouseover', (d, i) ->
-		hooverText = svgChart.append 'text'
-		.text d.name + ' = ' + d.new
-		.attr 'text-anchor', 'middle'
-		.attr 'x', $(element).width()/2
-		.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
-		.attr 'font-family', 'sans-serif'
-		.attr 'font-size', text_H + 'px'
+		if ready
+			hooverText = svgChart.append 'text'
+			.text d.name + ' = ' + d.new
+			.attr 'text-anchor', 'middle'
+			.attr 'x', $(element).width()/2
+			.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
+			.attr 'font-family', 'sans-serif'
+			.attr 'font-size', text_H + 'px'
 
-		d3.select this
-		.transition()
-		.duration 250
-		.attr 'fill', ->
-			if new_length <= 0
-				v = 'rgb(165, 42, 42)'
-			else
-				j = 0
-				c = 0
-				while c < i
-					if dataset[c].new > 0
-						j++
-					c++
-				v = d3.rgb(165,42,42).darker(3*((new_length-j)/new_length))
-			return v
+			d3.select this
+			.transition()
+			.duration 250
+			.attr 'fill', ->
+				if new_length <= 0
+					v = 'rgb(165, 42, 42)'
+				else
+					j = 0
+					c = 0
+					while c < i
+						if dataset[c].new > 0
+							j++
+						c++
+					v = d3.rgb(165,42,42).darker(3*((new_length-j)/new_length))
+				return v
 		return
 	.on 'mouseout', (d, i) ->
-		d3.select this
-		.transition()
-		.duration 350
-		.attr 'fill', ->
-			if new_length <= 0
-				v = 'rgb(70,130,180)'
-			else
-				j = 0
-				c = 0
-				while c < i
-					if dataset[c].new > 0
-						j++
-					c++
-				v = d3.rgb(70,130,180).darker(3*(j/new_length))
-			return v
-		hooverText.remove()
+		if ready
+			d3.select this
+			.transition()
+			.duration 350
+			.attr 'fill', ->
+				if new_length <= 0
+					v = 'rgb(70,130,180)'
+				else
+					j = 0
+					c = 0
+					while c < i
+						if dataset[c].new > 0
+							j++
+						c++
+					v = d3.rgb(70,130,180).darker(3*(j/new_length))
+				return v
+			hooverText.remove()
 		return
 
 	if !resize
 		rect_animated = rect.transition()
 		.duration 1000
 		.each 'start', (d, i) ->
+			ready = false
 			d3.select this
 			.attr 'x', ->
 				j = 0
@@ -394,6 +401,9 @@ drawBar = (element, resize) ->
 						c++
 					v = d3.rgb(70,130,180).darker(3*(j/old_length))
 				return v
+			return
+		.each "end", ->
+			ready = true
 			return
 	else
 		rect_animated = rect
