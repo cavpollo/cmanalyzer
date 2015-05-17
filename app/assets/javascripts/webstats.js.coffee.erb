@@ -212,9 +212,45 @@ drawBar = (element, resize) ->
 	.attr 'width', $(element).width()
 	.attr 'height', $(element).height()
 
+	#XSCALE
+	scaleX = []
+	scaleXNames = []
+
+	if new_length <= 1
+		the_v = 0
+	else
+		the_v = graph_Offset / (new_length - 1)
+	i=0
+	while i < new_length-1
+		scaleX.push (( (allbars_W/new_length) + the_v) * i)
+		scaleXNames.push dataset[i].name
+		scaleX.push ((allbars_W/new_length) * (i+1))
+		scaleXNames.push 'xxx'+i
+		i++
+	scaleX.push (( (allbars_W/new_length) + the_v) * i)
+	scaleX.push graph_W
+	scaleXNames.push dataset[i].name
+
+	scaleXCount = d3.scale.ordinal()
+	.range scaleX
+	.domain scaleXNames
+
+	xAxis = d3.svg.axis()
+	.scale scaleXCount
+	.orient "bottom"
+
+	svgChart.append("g")
+	.attr "class", "xaxis"
+	.attr "transform", "translate("+axis_XOffset+"," + (axis_YOffset+graph_H+1) + ")"
+	.call xAxis
+	.selectAll ".tick text"
+	.call wrap, (allbars_W/new_length)
+
+	#Y SCALE
 	scaleYCount = d3.scale.linear()
 	.domain [0, new_max]
 	.range [graph_H, 0]
+
 	yAxisTicks = d3.svg.axis()
 	.scale scaleYCount
 	.orient "left"
@@ -233,10 +269,8 @@ drawBar = (element, resize) ->
 	rect.on 'mouseover', (d, i) ->
 		hooverText = svgChart.append 'text'
 		.text d.name + ' = ' + d.new
-		.text d.name + ' = ' + d.new
 		.attr 'text-anchor', 'middle'
-		.attr 'x', ->
-			return $(element).width()/2
+		.attr 'x', $(element).width()/2
 		.attr 'y', ->
 			if new_max == 0
 				new_h_ratio = 0
@@ -340,21 +374,27 @@ drawBar = (element, resize) ->
 		return v
 	return
 
-wrap = (text, text_height, width) ->
-	words = text.split(/\s+/).reverse()
-	word = undefined
-	line = []
-	testText = svgChart.append 'text'
-	.attr 'font-family', 'sans-serif'
-	.attr 'font-size', text_height + 'px'
-
-	while word = words.pop()
-		line.push word
-		testText.text line.join(' ')
-		if testText.node().getComputedTextLength() > width
-			line.pop()
-			testText.text line.join(' ')
-			line = [ word ]
-			testText.text(word)
+wrap = (texty, width) ->
+	texty.each ->
+		text = d3.select(this)
+		if text.text().match(/xxx\d+/g) == null
+			words = text.text().split(/\s+/).reverse()
+			word = undefined
+			line = []
+			lineNumber = 0
+			lineHeight = 1.1
+			y = text.attr('y')
+			dy = parseFloat(text.attr('dy'))
+			tspan = text.text(null).append('tspan').attr('x', width/2).attr('y', y).attr('dy', dy + 'em')
+			while word = words.pop()
+				line.push word
+				tspan.text line.join(' ')
+				if tspan.node().getComputedTextLength() > width
+					line.pop()
+					tspan.text line.join(' ')
+					line = [ word ]
+					tspan = text.append('tspan').attr('x', width/2).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word)
+		else
+			text.remove()
 		return
 	return
