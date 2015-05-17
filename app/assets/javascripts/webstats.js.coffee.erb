@@ -174,12 +174,12 @@ drawBar = (element, resize) ->
 		return [thing];
 #	console.log dataset
 
+	axis_XOffset = 60
 	axis_YOffset = 10
-	text_XOffset = 60
 	text_YOffset = 5
 	text_H = 25
 	graph_H = $(element).height() - (axis_YOffset + text_H + 2*text_YOffset)
-	graph_W = $(element).width() - (text_XOffset)
+	graph_W = $(element).width() - (axis_XOffset)
 	graph_Offset = graph_W * 10 / 100
 	allbars_W = (graph_W - graph_Offset)
 
@@ -222,124 +222,55 @@ drawBar = (element, resize) ->
 
 	svgChart.append("g")
 	.attr "class", "yaxis"
-	.attr "transform", "translate("+(text_XOffset-1)+","+text_YOffset+")"
+	.attr "transform", "translate("+(axis_XOffset-1)+","+axis_YOffset+")"
 	.call yAxisTicks
 
-	if resize
-		svgChart.selectAll 'rect'
-		.data dataset
-		.enter()
-		.append 'rect'
-		.on 'mouseover', (d, i) ->
-			hooverText = svgChart.append 'text'
-			.text d.name + ' = ' + d.new
-			.attr 'text-anchor', 'middle'
-			.attr 'x', ->
-				return $(element).width()/2
-			.attr 'y', ->
-				if new_max == 0
-					new_h_ratio = 0
-				else
-					new_h_ratio = d.new / new_max
-				return axis_YOffset + graph_H + text_YOffset + text_H
-			.attr 'font-family', 'sans-serif'
-			.attr 'font-size', text_H + 'px'
+	rect = svgChart.selectAll 'rect'
+	.data dataset
+	.enter()
+	.append 'rect'
 
-			d3.select this
-			.transition()
-			.duration 250
-			.attr 'fill', ->
-				if new_length <= 0
-					v = 'rgb(165, 42, 42)'
-				else
-					v = d3.rgb(165,42,42).darker(3*((new_length-i)/new_length))
-				return v
-			return
-		.on 'mouseout', (d, i) ->
-			d3.select this
-			.transition()
-			.duration 350
-			.attr 'fill', ->
-				if new_length <= 0
-					v = 'rgb(70,130,180)'
-				else
-					v = d3.rgb(70,130,180).darker(3*(i/new_length))
-				return v
-			hooverText.remove()
-			return
-		.attr 'x', (d, i) ->
-			if new_length <= 1
-				v = 0
-			else
-				v = graph_Offset / (new_length - 1)
-			return (allbars_W/new_length + v) * i + text_XOffset
-		.attr 'y', (d) ->
+	rect.on 'mouseover', (d, i) ->
+		hooverText = svgChart.append 'text'
+		.text d.name + ' = ' + d.new
+		.text d.name + ' = ' + d.new
+		.attr 'text-anchor', 'middle'
+		.attr 'x', ->
+			return $(element).width()/2
+		.attr 'y', ->
 			if new_max == 0
 				new_h_ratio = 0
 			else
 				new_h_ratio = d.new / new_max
-			return graph_H - (new_h_ratio * graph_H) + axis_YOffset
-		.attr 'width', (d) ->
+			return axis_YOffset + graph_H + text_YOffset + text_H
+		.attr 'font-family', 'sans-serif'
+		.attr 'font-size', text_H + 'px'
+
+		d3.select this
+		.transition()
+		.duration 250
+		.attr 'fill', ->
 			if new_length <= 0
-				v = 0
+				v = 'rgb(165, 42, 42)'
 			else
-				v = allbars_W/new_length
+				v = d3.rgb(165,42,42).darker(3*((new_length-i)/new_length))
 			return v
-		.attr 'height', (d) ->
-			if new_max == 0
-				new_h_ratio = 0
-			else
-				new_h_ratio = d.new / new_max
-			return new_h_ratio * graph_H
-		.attr 'fill', (d, i) ->
+		return
+	.on 'mouseout', (d, i) ->
+		d3.select this
+		.transition()
+		.duration 350
+		.attr 'fill', ->
 			if new_length <= 0
 				v = 'rgb(70,130,180)'
 			else
 				v = d3.rgb(70,130,180).darker(3*(i/new_length))
 			return v
-	else
-		svgChart.selectAll 'rect'
-		.data dataset
-		.enter()
-		.append 'rect'
-		.on 'mouseover', (d, i) ->
-			hooverText = svgChart.append 'text'
-			.text d.name + ' = ' + d.new
-			.attr 'text-anchor', 'middle'
-			.attr 'x', ->
-				return $(element).width()/2
-			.attr 'y', ->
-				if new_max == 0
-					new_h_ratio = 0
-				else
-					new_h_ratio = d.new / new_max
-				return axis_YOffset + graph_H + text_YOffset + text_H
-			.attr 'font-family', 'sans-serif'
-			.attr 'font-size', text_H + 'px'
+		hooverText.remove()
+		return
 
-			d3.select this
-			.transition()
-			.duration 250
-			.attr 'fill', ->
-				if new_length <= 0
-					v = 'rgb(165, 42, 42)'
-				else
-					v = d3.rgb(165,42,42).darker(3*((new_length-i)/new_length))
-				return v
-			return
-		.on 'mouseout', (d, i) ->
-			d3.select this
-			.transition()
-			.duration 350
-			.attr 'fill', ->
-				if new_length <= 0
-					v = 'rgb(70,130,180)'
-				else
-					v = d3.rgb(70,130,180).darker(3*(i/new_length))
-				return v
-			hooverText.remove()
-			return
-		.transition()
+	if !resize
+		rect_animated = rect.transition()
 		.duration 1000
 		.each 'start', (d, i) ->
 			d3.select this
@@ -348,7 +279,7 @@ drawBar = (element, resize) ->
 					v = 0
 				else
 					v = graph_Offset / (old_length - 1)
-				return (allbars_W/old_length + v) * i + text_XOffset
+				return (allbars_W/old_length + v) * i + axis_XOffset
 			.attr 'y', ->
 				if old_max == 0
 					old_h_ratio = 0
@@ -374,34 +305,56 @@ drawBar = (element, resize) ->
 					v = d3.rgb(70,130,180).darker(3*(i/old_length))
 				return v
 			return
-		.attr 'x', (d, i) ->
-			if new_length <= 1
-				v = 0
-			else
-				v = graph_Offset / (new_length - 1)
-			return (allbars_W/new_length + v) * i + text_XOffset
-		.attr 'y', (d) ->
-			if new_max == 0
-				new_h_ratio = 0
-			else
-				new_h_ratio = d.new / new_max
-			return graph_H - (new_h_ratio * graph_H) + axis_YOffset
-		.attr 'width', (d) ->
-			if new_length <= 0
-				v = 0
-			else
-				v = allbars_W/new_length
-			return v
-		.attr 'height', (d) ->
-			if new_max == 0
-				new_h_ratio = 0
-			else
-				new_h_ratio = d.new / new_max
-			return new_h_ratio * graph_H
-		.attr 'fill', (d, i) ->
-			if new_length <= 0
-				v = 'rgb(70,130,180)'
-			else
-				v = d3.rgb(70,130,180).darker(3*(i/new_length))
-			return v
+	else
+		rect_animated = rect
+
+	rect_animated.attr 'x', (d, i) ->
+		if new_length <= 1
+			v = 0
+		else
+			v = graph_Offset / (new_length - 1)
+		return (allbars_W/new_length + v) * i + axis_XOffset
+	.attr 'y', (d) ->
+		if new_max == 0
+			new_h_ratio = 0
+		else
+			new_h_ratio = d.new / new_max
+		return graph_H - (new_h_ratio * graph_H) + axis_YOffset
+	.attr 'width', (d) ->
+		if new_length <= 0
+			v = 0
+		else
+			v = allbars_W/new_length
+		return v
+	.attr 'height', (d) ->
+		if new_max == 0
+			new_h_ratio = 0
+		else
+			new_h_ratio = d.new / new_max
+		return new_h_ratio * graph_H
+	.attr 'fill', (d, i) ->
+		if new_length <= 0
+			v = 'rgb(70,130,180)'
+		else
+			v = d3.rgb(70,130,180).darker(3*(i/new_length))
+		return v
+	return
+
+wrap = (text, text_height, width) ->
+	words = text.split(/\s+/).reverse()
+	word = undefined
+	line = []
+	testText = svgChart.append 'text'
+	.attr 'font-family', 'sans-serif'
+	.attr 'font-size', text_height + 'px'
+
+	while word = words.pop()
+		line.push word
+		testText.text line.join(' ')
+		if testText.node().getComputedTextLength() > width
+			line.pop()
+			testText.text line.join(' ')
+			line = [ word ]
+			testText.text(word)
+		return
 	return
