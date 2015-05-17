@@ -2,20 +2,36 @@
 
 <div class="container-fluid">
   <div class="row">
-	<div class="col-sm-12">
+	<div class="col-md-9 col-sm-9 col-xs-12">
 	  <div class="panel panel-default">
 		<div class="panel-body">
 		  <input type="hidden" id="time_span" value="today">
 		  <button type="button" class="btn btn-success time-span" data-time="today">Today</button>
 		  <button type="button" class="btn btn-default time-span" data-time="this_1_weeks">This Week</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_2_weeks">This Two Weeks</button>
 		  <button type="button" class="btn btn-default time-span" data-time="this_1_months">This Month</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_2_months">This Two Months</button>
 		  <button type="button" class="btn btn-default time-span" data-time="this_1_years">This Year</button>
 		  <button id="daterange" type="button" class="btn btn-default">
 			<i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
 			<span></span> <b class="caret"></b>
 		  </button>
+		</div>
+	  </div>
+	</div>
+	<div class="col-md-3 col-sm-3 col-xs-12">
+	  <div class="panel panel-default">
+		<div class="panel-body">
+		  <select id="version" class="form-control pull-right">
+			<option value="">All</option>
+			<option value="2.4.1">v2.4.1</option>
+			<option value="2.4.0">v2.4.0 (bug)</option>
+			<option value="2.3.5">v2.3.5 (bug)</option>
+			<option value="2.3.1">v2.3.1</option>
+			<option value="2.3.0">v2.3.0 (bug)</option>
+			<option value="2.1.1">v2.1.1</option>
+			<option value="2.1.0">v2.1.0 (bug)</option>
+			<option value="1.1.0">v1.1.0 (?)</option>
+			<option value="1.0.14">v1.0.14 (?)</option>
+		  </select>
 		</div>
 	  </div>
 	</div>
