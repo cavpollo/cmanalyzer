@@ -3,7 +3,7 @@
 # You can use CoffeeScript in this file: http://coffeescript.org/
 
 all_json = {}
-hooverText = {}
+#hooverText = {}
 
 ready = ->
 	client = new Keen(
@@ -25,7 +25,7 @@ ready = ->
 			endDate: moment(),
 			minDate: '01/01/2012',
 			maxDate: '31/12/2015',
-			dateLimit: { days: 60 },
+			dateLimit: { years: 5 },
 			showDropdowns: true,
 			showWeekNumbers: false,
 			timePicker: false,
@@ -177,17 +177,17 @@ resize_p = ->
 
 drawBar = (element, resize) ->
 	$(element).html('');
-	dataset = $.map all_json[element]['data'],  (value, index) ->
+	dataset = $.map all_json[element]['data'], (value, index) ->
 		thing = value
 		thing['name'] = index
 		return [thing];
 #	console.log dataset
 
-	axis_XOffset = 60
-	axis_YOffset = 10
-	text_YOffset = 7
+	axis_XOffset = 50
+	axis_YOffset = 4
+	text_YOffset = 30
 	text_H = 25
-	graph_H = $(element).height() - (axis_YOffset + text_H + 2*text_YOffset)
+	graph_H = $(element).height() - (axis_YOffset + text_H + text_YOffset)
 	graph_W = $(element).width() - (axis_XOffset)
 	graph_Offset = graph_W * 10 / 100
 
@@ -257,7 +257,7 @@ drawBar = (element, resize) ->
 				pending = false
 			if dataset[c].new != null
 				scaleX.push (( (allbars_W/new_length) + the_v) * i)
-				scaleXNames.push dataset[c].name
+				scaleXNames.push '(' + dataset[c].new + ') ' + dataset[c].name
 				pending = true
 				i++
 			c++
@@ -265,9 +265,8 @@ drawBar = (element, resize) ->
 		scaleX.push graph_W
 		axis_width = allbars_W/new_length
 
-	console.log scaleX
-	console.log scaleXNames
-	console.log axis_width
+#	console.log scaleX
+#	console.log scaleXNames
 
 	scaleXCount = d3.scale.ordinal()
 	.range scaleX
@@ -304,16 +303,16 @@ drawBar = (element, resize) ->
 	.enter()
 	.append 'rect'
 
-	ready = false
+	hoover_ready = resize
 	rect.on 'mouseover', (d, i) ->
-		if ready
-			hooverText = svgChart.append 'text'
-			.text d.name + ' = ' + d.new
-			.attr 'text-anchor', 'middle'
-			.attr 'x', $(element).width()/2
-			.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
-			.attr 'font-family', 'sans-serif'
-			.attr 'font-size', text_H + 'px'
+		if hoover_ready
+#			hooverText = svgChart.append 'text'
+#			.text d.name + ' = ' + d.new
+#			.attr 'text-anchor', 'middle'
+#			.attr 'x', $(element).width()/2
+#			.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
+#			.attr 'font-family', 'sans-serif'
+#			.attr 'font-size', text_H + 'px'
 
 			d3.select this
 			.transition()
@@ -332,7 +331,7 @@ drawBar = (element, resize) ->
 				return v
 		return
 	.on 'mouseout', (d, i) ->
-		if ready
+		if hoover_ready
 			d3.select this
 			.transition()
 			.duration 350
@@ -348,14 +347,14 @@ drawBar = (element, resize) ->
 						c++
 					v = d3.rgb(70,130,180).darker(3*(j/new_length))
 				return v
-			hooverText.remove()
+#			hooverText.remove()
 		return
 
 	if !resize
 		rect_animated = rect.transition()
 		.duration 1000
 		.each 'start', (d, i) ->
-			ready = false
+			hoover_ready = false
 			d3.select this
 			.attr 'x', ->
 				j = 0
@@ -403,7 +402,7 @@ drawBar = (element, resize) ->
 				return v
 			return
 		.each "end", ->
-			ready = true
+			hoover_ready = true
 			return
 	else
 		rect_animated = rect
@@ -468,11 +467,19 @@ wrap = (texty, width) ->
 			while word = words.pop()
 				line.push word
 				tspan.text line.join(' ')
+#				console.log '------------'
+#				console.log tspan.text()
+#				console.log line
+#				console.log words
 				if tspan.node().getComputedTextLength() > width
-					line.pop()
-					tspan.text line.join(' ')
-					line = [ word ]
-					tspan = text.append('tspan').attr('x', width/2).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word)
+					if line.length == 1
+						temp = line.pop()
+						words.push temp.substr(0, temp.length-2).concat('.')
+					else
+						words.push line.pop()
+						tspan.text line.join(' ')
+						line = []
+						tspan = text.append('tspan').attr('x', width/2).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(null)
 		else
 			text.remove()
 		return
