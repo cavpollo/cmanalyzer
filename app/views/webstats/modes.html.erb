@@ -1,121 +1,32 @@
 <h1><span class="label label-default">Modes</span></h1>
-<button id="a" type="button" class="btn btn-default">Load</button>
 
 <div class="container-fluid">
   <div class="row">
-	<div class="col-sm-8">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart01">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
-		</div>
-	  </div>
-	</div>
-	<div class="col-sm-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart02">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
+	<div class="col-sm-12">
+	  <div class="panel panel-default">
+		<div class="panel-body">
+		  <input type="hidden" id="time_span" value="today">
+		  <button type="button" class="btn btn-success time-span" data-time="today">Today</button>
+		  <button type="button" class="btn btn-default time-span" data-time="this_1_weeks">This Week</button>
+		  <button type="button" class="btn btn-default time-span" data-time="this_2_weeks">This Two Weeks</button>
+		  <button type="button" class="btn btn-default time-span" data-time="this_1_months">This Month</button>
+		  <button type="button" class="btn btn-default time-span" data-time="this_2_months">This Two Months</button>
+		  <button type="button" class="btn btn-default time-span" data-time="this_1_years">This Year</button>
+		  <button id="daterange" type="button" class="btn btn-default">
+			<i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
+			<span></span> <b class="caret"></b>
+		  </button>
 		</div>
 	  </div>
 	</div>
   </div>
-
   <div class="row">
-	<div class="col-sm-6 col-md-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
+	<div class="col-sm-12">
+	  <div class="panel panel-default">
+		<div class="panel-heading">
+		  Fotografias
 		</div>
-		<div class="chart-stage">
-		  <div id="chart03">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
-		</div>
-	  </div>
-	</div>
-	<div class="col-sm-6 col-md-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart04">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
-		</div>
-	  </div>
-	</div>
-	<div class="col-sm-6 col-md-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart05">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
-		</div>
-	  </div>
-	</div>
-	<!-- end of three -->
-	<div class="col-sm-6 col-md-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart06">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
-		</div>
-	  </div>
-	</div>
-	<div class="col-sm-6 col-md-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart07">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
-		</div>
-	  </div>
-	</div>
-	<div class="col-sm-6 col-md-4">
-	  <div class="chart-wrapper">
-		<div class="chart-title">
-		  Cell Title
-		</div>
-		<div class="chart-stage">
-		  <div id="chart08">
-		  </div>
-		</div>
-		<div class="chart-notes">
-		  Notes about this chart
+		<div id="chart01" class="panel-body chart">
 		</div>
 	  </div>
 	</div>

@@ -3,6 +3,7 @@
 # You can use CoffeeScript in this file: http://coffeescript.org/
 
 all_json = {}
+hooverText = {}
 
 ready = ->
 	client = new Keen(
@@ -102,7 +103,7 @@ run_query_art_count = (client, element, type) ->
 			start: $('#time_span').attr 'fromDate'
 			end: $('#time_span').attr 'toDate')
 
-	$(element).append('<div class="loady"><div class="arc1"></div></div>');
+	$(element).append '<div class="loady"><div class="arc1"></div></div>'
 
 	client.run query_art_count, (err, res) ->
 		if err
@@ -112,9 +113,10 @@ run_query_art_count = (client, element, type) ->
 				all_json[element]['data'] = {}
 			else
 				i = 0
-				while i < all_json[element]['data'].length
-					all_json[element]['data'][i]['old'] = all_json[element]['data'][i]['new']
-					all_json[element]['data'][i]['new'] = null
+				while i < Object.keys(all_json[element]['data']).length
+					name = Object.keys(all_json[element]['data'])[i]
+					all_json[element]['data'][name]['old'] = all_json[element]['data'][name]['new']
+					all_json[element]['data'][name]['new'] = null
 					i++
 
 #			console.log all_json[element]
@@ -130,14 +132,15 @@ run_query_art_count = (client, element, type) ->
 #			console.log all_json[element]
 
 			i = 0
-			while i < all_json[element]['data'].length
-				if all_json[element]['data'][i]['old'] == 0 && all_json[element]['data'][i]['new'] == undefined
+			while i < Object.keys(all_json[element]['data']).length
+				name = Object.keys(all_json[element]['data'])[i]
+				if all_json[element]['data'][name]['old'] == 0 && all_json[element]['data'][name]['new'] == undefined
 					all_json[element]['data'].splice i, 1
 				else
 					i++
 
 #			console.log all_json[element]
-			
+
 #			all_json[element]['data'].sort (a, b) ->
 #				console.log 'aa'
 #				if (a.picName > b.picName)
@@ -170,41 +173,154 @@ drawBar = (element) ->
 		return [thing];
 #	console.log dataset
 
-	g_h = 200
+	t_h = 15
+	t_offset = 10
+	g_h = $(element).height() - (t_h + 2*t_offset)
 	g_w = $(element).width()
-	g_o = g_w * 10 / 100
-	i_w = (g_w - g_o) / dataset.length
+	g_offset = g_w * 10 / 100
+	all_bars_w = (g_w - g_offset)
 
 	i = 0
 	total = 0
 	old_max = 0
 	new_max = 0
+	old_length = 0
+	new_length = 0
 	while i < dataset.length
 		total += dataset[i].new
 		if dataset[i].new > new_max
 			new_max = dataset[i].new
 		if dataset[i].old > old_max
 			old_max = dataset[i].old
+		if dataset[i].old > 0
+			old_length++
+		if dataset[i].new > 0
+			new_length++
 		i++
 
+	if old_length == 0
+		old_length = new_length
+		
 	if svgChart
 		svgChart.remove()
 
 	svgChart = d3.select(element)
-	.append "svg"
-	.attr "width", g_w
-	.attr "height", g_h
+	.append 'svg'
+	.attr 'width', g_w
+	.attr 'height', $(element).height()
 
-	svgChart.selectAll "rect"
+	svgChart.selectAll 'rect'
 	.data dataset
 	.enter()
-	.append "rect"
-	.attr "x", (d, i) ->
-		return (i_w + (g_o / (dataset.length - 1))) * i
-	.attr "y", (d) ->
-		return g_h - ((d.new / new_max) * g_h)
-	.attr "width", (d) ->
-		return i_w
-	.attr "height", (d) ->
-		return (d.new / new_max) * g_h
+	.append 'rect'
+	.on 'mouseover', (d, i) ->
+		hooverText = svgChart.append 'text'
+		.text d.name #+ ' ' + d.new
+		.attr 'text-anchor', 'middle'
+		.attr 'x', ->
+			if new_length <= 1
+				v = 0
+			else
+				v = g_offset / (new_length - 1)
+			if new_length <= 0
+				v2 = 0
+			else
+				v2 = all_bars_w/new_length
+			return (all_bars_w/new_length + v) * i + v2/2
+		.attr 'y', ->
+			if new_max == 0
+				new_h_ratio = 0
+			else
+				new_h_ratio = d.new / new_max
+			return g_h + (t_h + t_offset)
+		.attr 'font-family', 'sans-serif'
+		.attr 'font-size', t_h + 'px'
+
+		d3.select this
+		.transition()
+		.duration 250
+		.attr 'fill', ->
+			if new_length <= 0
+				v = 'rgb(165, 42, 42)'
+			else
+				v = d3.rgb(165,42,42).darker(3*((new_length-i)/new_length))
+			return v
+		return
+	.on 'mouseout', (d, i) ->
+		d3.select this
+		.transition()
+		.duration 350
+		.attr 'fill', ->
+			if new_length <= 0
+				v = 'rgb(70,130,180)'
+			else
+				v = d3.rgb(70,130,180).darker(3*(i/new_length))
+			return v
+		hooverText.remove()
+		return
+	.transition()
+	.duration 1500
+	.each 'start', (d, i) ->
+		d3.select this
+		.attr 'x', ->
+			if old_length <= 1
+				v = 0
+			else
+				v = g_offset / (old_length - 1)
+			return (all_bars_w/old_length + v) * i
+		.attr 'y', ->
+			if old_max == 0
+				old_h_ratio = 0
+			else
+				old_h_ratio = d.old / old_max
+			return g_h - (old_h_ratio * g_h)
+		.attr 'width', ->
+			if old_length <= 0
+				v = 0
+			else
+				v = all_bars_w/old_length
+			return v
+		.attr 'height', ->
+			if old_max == 0
+				old_h_ratio = 0
+			else
+				old_h_ratio = d.old / old_max
+			return old_h_ratio * g_h
+		.attr 'fill', ->
+			if old_length <= 0
+				v = 'rgb(70,130,180)'
+			else
+				v = d3.rgb(70,130,180).darker(3*(i/old_length))
+			return v
+		return
+	.attr 'x', (d, i) ->
+		if new_length <= 1
+			v = 0
+		else
+			v = g_offset / (new_length - 1)
+		return (all_bars_w/new_length + v) * i
+	.attr 'y', (d) ->
+		if new_max == 0
+			new_h_ratio = 0
+		else
+			new_h_ratio = d.new / new_max
+		return g_h - (new_h_ratio * g_h)
+	.attr 'width', (d) ->
+		if new_length <= 0
+			v = 0
+		else
+			v = all_bars_w/new_length
+		return v
+	.attr 'height', (d) ->
+		if new_max == 0
+			new_h_ratio = 0
+		else
+			new_h_ratio = d.new / new_max
+		return new_h_ratio * g_h
+	.attr 'fill', (d, i) ->
+		if new_length <= 0
+			v = 'rgb(70,130,180)'
+		else
+			v = d3.rgb(70,130,180).darker(3*(i/new_length))
+		return v
 	return
