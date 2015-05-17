@@ -27,7 +27,7 @@ ready = ->
 			maxDate: '31/12/2015',
 			dateLimit: { days: 60 },
 			showDropdowns: true,
-			showWeekNumbers: true,
+			showWeekNumbers: false,
 			timePicker: false,
 			timePickerIncrement: 1,
 			timePicker12Hour: true,
@@ -51,31 +51,47 @@ ready = ->
 				fromLabel: 'From',
 				toLabel: 'To',
 				customRangeLabel: 'Custom',
-				daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr','Sa'],
+				daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
 				monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 				firstDay: 1
 			}
 		},
 		(start, end, label) ->
-			$('#daterange span').html(start.format('D/MMMM/YYYY') + ' - ' + end.format('D/MMMM/YYYY'));
-
-			$('.time-span').removeClass('btn-success')
-			$('#daterange').removeClass('btn-default')
-			$('.time-span').addClass('btn-default')
-			$('#daterange').addClass('btn-success')
-
-			$('#time_span').val ''
-			$('#time_span').attr 'fromDate', start.toISOString()
-			$('#time_span').attr 'toDate', end.toISOString()
-
-			run_query_art_count client, '#chart01', 'barchart'
+#			$('#daterange span').html(start.format('D/MMMM/YYYY') + ' - ' + end.format('D/MMMM/YYYY'));
+#
+#			$('.time-span').removeClass('btn-success')
+#			$('#daterange').removeClass('btn-default')
+#			$('.time-span').addClass('btn-default')
+#			$('#daterange').addClass('btn-success')
+#
+#			$('#time_span').val ''
+#			$('#time_span').attr 'fromDate', start.toISOString()
+#			$('#time_span').attr 'toDate', end.toISOString()
+#
+#			run_query_art_count client, '#chart01', 'barchart'
 			return
+
+	$('#daterange').on 'apply.daterangepicker', (ev, picker) ->
+		$('#daterange span').html(picker.startDate.format('D/MMMM/YYYY') + ' - ' + picker.endDate.format('D/MMMM/YYYY'));
+
+		$('.time-span').removeClass('btn-success')
+		$('#daterange').removeClass('btn-default')
+		$('.time-span').addClass('btn-default')
+		$('#daterange').addClass('btn-success')
+
+		$('#time_span').val ''
+		$('#time_span').attr 'fromDate', picker.startDate.toISOString()
+		$('#time_span').attr 'toDate', picker.endDate.toISOString()
+
+		run_query_art_count client, '#chart01', 'barchart'
+		return
+
 
 	$('.time-span').click ->
 		$('.time-span').removeClass('btn-success')
-		$('#pick_date').removeClass('btn-success')
+		$('#daterange').removeClass('btn-success')
 		$('.time-span').addClass('btn-default')
-		$('#pick_date').addClass('btn-default')
+		$('#daterange').addClass('btn-default')
 		$(this).removeClass('btn-default')
 		$(this).addClass('btn-success')
 
@@ -184,7 +200,10 @@ drawBar = (element, resize) ->
 	graph_H = $(element).height() - (axis_YOffset + text_H + 2*text_YOffset)
 	graph_W = $(element).width() - (axis_XOffset)
 	graph_Offset = graph_W * 10 / 100
-	allbars_W = (graph_W - graph_Offset)
+	if new_length <= 1
+		allbars_W = graph_W
+	else
+		allbars_W = (graph_W - graph_Offset)
 
 	i = 0
 	total = 0
@@ -225,21 +244,22 @@ drawBar = (element, resize) ->
 		scaleXNames.push 'No Results'
 		axis_width = graph_W
 	else
-		if new_length <= 1
+		if new_length == 1
 			the_v = 0
 		else
 			the_v = graph_Offset / (new_length - 1)
+
 		c = 0
 		i = 0
 		while c < dataset.length
-			console.log dataset[c]
 			if dataset[c].new != null
-				console.log 'in' + dataset[c].name
 				scaleX.push (( (allbars_W/new_length) + the_v) * i)
-				scaleXNames.push dataset[i].name
+				scaleXNames.push dataset[c].name
+
 				if c < dataset.length
 					scaleX.push ((allbars_W/new_length) * (i+1))
 					scaleXNames.push 'xxx'+i
+
 				i++
 			c++
 
@@ -286,12 +306,7 @@ drawBar = (element, resize) ->
 		.text d.name + ' = ' + d.new
 		.attr 'text-anchor', 'middle'
 		.attr 'x', $(element).width()/2
-		.attr 'y', ->
-			if new_max == 0
-				new_h_ratio = 0
-			else
-				new_h_ratio = d.new / new_max
-			return axis_YOffset + graph_H + text_YOffset + text_H
+		.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
 		.attr 'font-family', 'sans-serif'
 		.attr 'font-size', text_H + 'px'
 
@@ -302,7 +317,13 @@ drawBar = (element, resize) ->
 			if new_length <= 0
 				v = 'rgb(165, 42, 42)'
 			else
-				v = d3.rgb(165,42,42).darker(3*((new_length-i)/new_length))
+				j = 0
+				c = 0
+				while c < i
+					if dataset[c].new > 0
+						j++
+					c++
+				v = d3.rgb(165,42,42).darker(3*((new_length-j)/new_length))
 			return v
 		return
 	.on 'mouseout', (d, i) ->
@@ -313,7 +334,13 @@ drawBar = (element, resize) ->
 			if new_length <= 0
 				v = 'rgb(70,130,180)'
 			else
-				v = d3.rgb(70,130,180).darker(3*(i/new_length))
+				j = 0
+				c = 0
+				while c < i
+					if dataset[c].new > 0
+						j++
+					c++
+				v = d3.rgb(70,130,180).darker(3*(j/new_length))
 			return v
 		hooverText.remove()
 		return
@@ -356,10 +383,16 @@ drawBar = (element, resize) ->
 					old_h_ratio = d.old / old_max
 				return old_h_ratio * graph_H
 			.attr 'fill', ->
-				if old_length <= 0
+				if old_length <= 1
 					v = 'rgb(70,130,180)'
 				else
-					v = d3.rgb(70,130,180).darker(3*(i/old_length))
+					j = 0
+					c = 0
+					while c < i
+						if dataset[c].old > 0
+							j++
+						c++
+					v = d3.rgb(70,130,180).darker(3*(j/old_length))
 				return v
 			return
 	else
@@ -397,10 +430,16 @@ drawBar = (element, resize) ->
 			new_h_ratio = d.new / new_max
 		return new_h_ratio * graph_H
 	.attr 'fill', (d, i) ->
-		if new_length <= 0
+		if new_length <= 1
 			v = 'rgb(70,130,180)'
 		else
-			v = d3.rgb(70,130,180).darker(3*(i/new_length))
+			j = 0
+			c = 0
+			while c < i
+				if dataset[c].new > 0
+					j++
+				c++
+			v = d3.rgb(70,130,180).darker(3*(j/new_length))
 		return v
 	return
 
