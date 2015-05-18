@@ -13,7 +13,7 @@ ready = ->
 		host: 'api.keen.io/3.0',
 		requestType: 'jsonp')
 
-	d3.select(window).on('resize', resize_p)
+	d3.select(window).on('resize', refresh_graphs)
 
 	if $('body.webstats.art').length
 		run_query_art_count client, '#chart01', 'barchart'
@@ -57,18 +57,6 @@ ready = ->
 			}
 		},
 		(start, end, label) ->
-#			$('#daterange span').html(start.format('D/MMMM/YYYY') + ' - ' + end.format('D/MMMM/YYYY'));
-#
-#			$('.time-span').removeClass('btn-success')
-#			$('#daterange').removeClass('btn-default')
-#			$('.time-span').addClass('btn-default')
-#			$('#daterange').addClass('btn-success')
-#
-#			$('#time_span').val ''
-#			$('#time_span').attr 'fromDate', start.toISOString()
-#			$('#time_span').attr 'toDate', end.toISOString()
-#
-#			run_query_art_count client, '#chart01', 'barchart'
 			return
 
 	$('#daterange').on 'apply.daterangepicker', (ev, picker) ->
@@ -102,24 +90,35 @@ ready = ->
 		run_query_art_count client, '#chart01', 'barchart'
 		return
 
+	$('#version').change ->
+		run_query_art_count client, '#chart01', 'barchart'
+
 	return
 
 $(document).ready ready
 $(document).on 'page:load', ready
 
 run_query_art_count = (client, element, type) ->
+	build_query = {
+		'eventCollection': 'artSeen'
+		'groupBy': 'picName'
+	}
+
+	if $('#version').val() != ''
+		console.log $('#version').val()
+		build_query['filters'] = [{
+			'property_name':'version',
+			'operator':'eq',
+			'property_value': $('#version').val()}]
+
 	if $('#time_span').val() && $('#time_span').val() != ''
-		query_art_count = new (Keen.Query)('count',
-			eventCollection: 'artSeen'
-			groupBy: 'picName'
-			timeframe: $('#time_span').val())
+		build_query['timeframe'] = $('#time_span').val()
 	else
-		query_art_count = new (Keen.Query)('count',
-			eventCollection: 'artSeen'
-			groupBy: 'picName'
-			timeframe:
-				{start: $('#time_span').attr 'fromdate'
-				end: $('#time_span').attr 'todate'})
+		build_query['timeframe'] =
+			{start: $('#time_span').attr 'fromdate'
+			end: $('#time_span').attr 'todate'}
+
+	query_art_count = new (Keen.Query)('count', build_query)
 
 	$(element).append '<div class="loady"><div class="arc1"></div></div>'
 
@@ -166,7 +165,7 @@ run_query_art_count = (client, element, type) ->
 
 	return
 
-resize_p = ->
+refresh_graphs = ->
 	$('.chart').each ->
 		if all_json['#'+$(this).attr('id')]
 			if all_json['#'+$(this).attr('id')]['type'] == 'barchart'
@@ -184,7 +183,7 @@ drawBar = (element, resize) ->
 #	console.log dataset
 
 	axis_XOffset = 50
-	axis_YOffset = 4
+	axis_YOffset = 6
 	text_YOffset = 30
 	text_H = 25
 	graph_H = $(element).height() - (axis_YOffset + text_H + text_YOffset)
@@ -252,7 +251,7 @@ drawBar = (element, resize) ->
 		pending = false
 		while c < dataset.length
 			if pending
-				scaleX.push ((allbars_W/new_length) * (i+1))
+				scaleX.push ((allbars_W/new_length) * i)
 				scaleXNames.push 'xxx'+i
 				pending = false
 			if dataset[c].new != null
@@ -357,19 +356,19 @@ drawBar = (element, resize) ->
 			hoover_ready = false
 			d3.select this
 			.attr 'x', ->
-				j = 0
-				c = 0
-				while c < i
-					if dataset[c].old > 0
-						j++
-					c++
-
 				if old_length <= 1
 					v = 0
 				else
-					v = graph_Offset / (old_length - 1)
+					j = 0
+					c = 0
+					while c < i
+						if dataset[c].old > 0
+							j++
+						c++
 
-				return (allbars_W/old_length + v) * j + axis_XOffset
+					v = (allbars_W/old_length + graph_Offset / (old_length - 1))*j
+
+				return v + axis_XOffset
 			.attr 'y', ->
 				if old_max == 0
 					old_h_ratio = 0
@@ -408,18 +407,17 @@ drawBar = (element, resize) ->
 		rect_animated = rect
 
 	rect_animated.attr 'x', (d, i) ->
-		j = 0
-		c = 0
-		while c < i
-			if dataset[c].new > 0
-				j++
-			c++
-
 		if new_length <= 1
 			v = 0
 		else
-			v = graph_Offset / (new_length - 1)
-		return (allbars_W/new_length + v) * j + axis_XOffset
+			j = 0
+			c = 0
+			while c < i
+				if dataset[c].new > 0
+					j++
+				c++
+			v = (allbars_W/new_length + graph_Offset / (new_length - 1))*j
+		return v + axis_XOffset
 	.attr 'y', (d) ->
 		if new_max == 0
 			new_h_ratio = 0
