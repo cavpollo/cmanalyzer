@@ -16,7 +16,7 @@ ready = ->
 	d3.select(window).on('resize', refresh_graphs)
 
 	if $('body.webstats.art').length
-		run_query_art_count client, '#chart01', 'barchart'
+		query_and_draw client
 
 	$('#daterange span').html(moment().subtract(29, 'days').format('D/MMMM/YYYY') + ' - ' + moment().format('D/MMMM/YYYY'));
 	$('#daterange').daterangepicker {
@@ -71,7 +71,7 @@ ready = ->
 		$('#time_span').attr 'fromDate', picker.startDate.toISOString()
 		$('#time_span').attr 'toDate', picker.endDate.toISOString()
 
-		run_query_art_count client, '#chart01', 'barchart'
+		query_and_draw client
 		return
 
 
@@ -87,91 +87,107 @@ ready = ->
 		$('#time_span').attr 'fromDate', ''
 		$('#time_span').attr 'toDate', ''
 
-		run_query_art_count client, '#chart01', 'barchart'
+		query_and_draw client
 		return
 
 	$('#version').change ->
-		run_query_art_count client, '#chart01', 'barchart'
+		query_and_draw client
 
 	return
 
 $(document).ready ready
 $(document).on 'page:load', ready
 
-run_query_art_count = (client, element, type) ->
-	build_query = {
-		'eventCollection': 'artSeen'
-		'groupBy': 'picName'
-	}
+query_and_draw = (client) ->
+	run_query_art_count client, '#chart01'
+
+refresh_graphs = ->
+	drawBar '#chart01', true
+	return
+
+init_or_switch_data = (element) ->
+	if all_json[element] == undefined
+		all_json[element] = {data: {}}
+	else
+		i = 0
+		while i < Object.keys(all_json[element]['data']).length
+			name = Object.keys(all_json[element]['data'])[i]
+			all_json[element]['data'][name] =
+				{old: all_json[element]['data'][name]['new']
+				new: null}
+			i++
+
+	#console.log all_json[element]
+	return
+
+fill_in_new_data = (res, element, name_getter) ->
+	i = 0
+	while i < res.result.length
+		name = name_getter res.result[i]
+		if all_json[element]['data'][name] == undefined
+			all_json[element]['data'][name] = {}
+			all_json[element]['data'][name]['old'] = 0
+		all_json[element]['data'][name]['new'] = res.result[i]['result']
+		i++
+
+	#console.log all_json[element]
+	return
+
+remove_empty_data = (element) ->
+	i = 0
+	while i < Object.keys(all_json[element]['data']).length
+		name = Object.keys(all_json[element]['data'])[i]
+		if all_json[element]['data'][name]['old'] == 0 && all_json[element]['data'][name]['new'] == undefined
+			all_json[element]['data'].splice i, 1
+		else
+			i++
+
+	#console.log all_json[element]
+	return
+
+get_pic_name = (value) ->
+	return value['picName']
+
+build_query = ->
+	the_query = {}
 
 	if $('#version').val() != ''
-		console.log $('#version').val()
-		build_query['filters'] = [{
-			'property_name':'version',
-			'operator':'eq',
-			'property_value': $('#version').val()}]
+		the_query['filters'] = [
+			{property_name:'version'
+			operator:'eq'
+			property_value: $('#version').val()}]
 
 	if $('#time_span').val() && $('#time_span').val() != ''
-		build_query['timeframe'] = $('#time_span').val()
+		the_query['timeframe'] = $('#time_span').val()
 	else
-		build_query['timeframe'] =
+		the_query['timeframe'] =
 			{start: $('#time_span').attr 'fromdate'
 			end: $('#time_span').attr 'todate'}
 
-	query_art_count = new (Keen.Query)('count', build_query)
+	return the_query
 
+run_query_art_count = (client, element) ->
+	k_query = build_query()
+	k_query['eventCollection'] = 'artSeen'
+	k_query['groupBy'] = 'picName'
+
+	query_art_count = new (Keen.Query)('count', k_query)
+
+	#clocky thingy
 	$(element).append '<div class="loady"><div class="arc1"></div></div>'
 
 	client.run query_art_count, (err, res) ->
 		if err
 		else
-			if all_json[element] == undefined
-				all_json[element] = {}
-				all_json[element]['data'] = {}
-			else
-				i = 0
-				while i < Object.keys(all_json[element]['data']).length
-					name = Object.keys(all_json[element]['data'])[i]
-					all_json[element]['data'][name]['old'] = all_json[element]['data'][name]['new']
-					all_json[element]['data'][name]['new'] = null
-					i++
+			init_or_switch_data element
 
-#			console.log all_json[element]
+			fill_in_new_data res, element, get_pic_name
 
-			i = 0
-			while i < res.result.length
-				if all_json[element]['data'][res.result[i]['picName']] == undefined
-					all_json[element]['data'][res.result[i]['picName']] = {}
-					all_json[element]['data'][res.result[i]['picName']]['old'] = 0
-				all_json[element]['data'][res.result[i]['picName']]['new'] = res.result[i]['result']
-				i++
-
-#			console.log all_json[element]
-
-			i = 0
-			while i < Object.keys(all_json[element]['data']).length
-				name = Object.keys(all_json[element]['data'])[i]
-				if all_json[element]['data'][name]['old'] == 0 && all_json[element]['data'][name]['new'] == undefined
-					all_json[element]['data'].splice i, 1
-				else
-					i++
-
-#			console.log all_json[element]
-
-			all_json[element]['type'] = type
+			remove_empty_data element
 
 			drawBar element, false
 		return
 
-	return
-
-refresh_graphs = ->
-	$('.chart').each ->
-		if all_json['#'+$(this).attr('id')]
-			if all_json['#'+$(this).attr('id')]['type'] == 'barchart'
-				drawBar '#'+$(this).attr('id'), true
-			else
-				drawBar '#'+$(this).attr('id'), true
 	return
 
 drawBar = (element, resize) ->
