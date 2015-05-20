@@ -19,3 +19,4 @@
 //= require keen.min
 //= require moment.min
 //= require daterangepicker
+//= require c3.min

@@ -13,5 +13,6 @@
  *= require bootstrap_and_overrides
  *= require daterangepicker-bs3
  *= require animation
+ *= require c3.min
  *= require_self
  */

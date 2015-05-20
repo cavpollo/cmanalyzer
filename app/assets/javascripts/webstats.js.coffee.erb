@@ -100,9 +100,13 @@ $(document).on 'page:load', ready
 
 query_and_draw = (client) ->
 	run_query_art_count client, '#chart01'
+	run_query_art_daily_count client, '#chart02'
 
 refresh_graphs = ->
-	drawBar '#chart01', true
+	if all_json['#chart01']
+		drawBar '#chart01', true
+	if all_json['#chart02']
+		draw1LineGraph '#chart02', true
 	return
 
 init_or_switch_data = (element) ->
@@ -120,14 +124,14 @@ init_or_switch_data = (element) ->
 	#console.log all_json[element]
 	return
 
-fill_in_new_data = (res, element, name_getter) ->
+fill_in_new_data = (res, element, name_getter, value_getter) ->
 	i = 0
 	while i < res.result.length
-		name = name_getter res.result[i]
+		name = (name_getter res.result[i]) #.replace /[^A-Za-z0-9]/g, ''
 		if all_json[element]['data'][name] == undefined
 			all_json[element]['data'][name] = {}
 			all_json[element]['data'][name]['old'] = 0
-		all_json[element]['data'][name]['new'] = res.result[i]['result']
+		all_json[element]['data'][name]['new'] = value_getter res.result[i]
 		i++
 
 	#console.log all_json[element]
@@ -147,6 +151,9 @@ remove_empty_data = (element) ->
 
 get_pic_name = (value) ->
 	return value['picName']
+
+get_pic_value = (value) ->
+	return value['result']
 
 build_query = ->
 	the_query = {}
@@ -181,11 +188,48 @@ run_query_art_count = (client, element) ->
 		else
 			init_or_switch_data element
 
-			fill_in_new_data res, element, get_pic_name
+			fill_in_new_data res, element, get_pic_name, get_pic_value
 
 			remove_empty_data element
 
 			drawBar element, false
+		return
+
+	return
+
+run_query_art_daily_count = (client, element) ->
+	k_query = build_query()
+	k_query['eventCollection'] = 'artSeen'
+	k_query['interval'] = 'daily'
+
+	query_art_count = new (Keen.Query)('count', k_query)
+
+	#clocky thingy
+	$(element).append '<div class="loady"><div class="arc1"></div></div>'
+
+	client.run query_art_count, (err, res) ->
+		if err
+		else
+			all_json[element] = {
+				data: {
+					xDataset: ['x']
+					yDataset: []
+				}
+			}
+
+			#console.log res
+
+			i=0
+			while i < res['result'].length
+				xdate = moment(res['result'][i]['timeframe']['start'])
+				if moment().isAfter(xdate)
+					all_json[element].data.xDataset.push xdate.format('YYYY-MM-DD')
+					if i==0
+						all_json[element].data.yDataset.push ['Pictures Seen']
+					all_json[element].data.yDataset[0].push res['result'][i].value
+				i++
+
+			draw1LineGraph element, false
 		return
 
 	return
@@ -466,6 +510,44 @@ drawBar = (element, resize) ->
 		return v
 	return
 
+draw1LineGraph = (element, resize) ->
+	$(element).html('');
+
+	if chartLine
+		chartLine.remove()
+
+	chartColumns = []
+	chartColumns.push all_json[element]['data']['xDataset']
+	chartTypes = {}
+	i = 0
+	while i < all_json[element]['data']['yDataset'].length
+		chartColumns.push all_json[element]['data']['yDataset'][i]
+		chartTypes[all_json[element]['data']['yDataset'][i][0]] = 'area' #'area-spline'
+		i++
+
+	chartLine = c3.generate({
+		axis: {
+			x: {
+				type: 'timeseries'
+				tick: {
+					format: '%d-%m-%Y'
+				}
+			}
+		}
+		bindto: element
+		data: {
+			x: 'x'
+			columns: chartColumns
+			types: chartTypes
+		}
+		size: {
+			height: $(element).height()
+			width: $(element).width()
+		}
+	})
+
+	return
+
 wrap = (texty, width) ->
 	texty.each ->
 		text = d3.select(this)
@@ -481,10 +563,10 @@ wrap = (texty, width) ->
 			while word = words.pop()
 				line.push word
 				tspan.text line.join(' ')
-#				console.log '------------'
-#				console.log tspan.text()
-#				console.log line
-#				console.log words
+				#				console.log '------------'
+				#				console.log tspan.text()
+				#				console.log line
+				#				console.log words
 				if tspan.node().getComputedTextLength() > width
 					if line.length == 1
 						temp = line.pop()
