@@ -93,6 +93,22 @@ ready = ->
 	$('#version').change ->
 		query_and_draw client
 
+	$('.group-button').click ->
+		if $(this).prop 'data-grouped'
+			$(this).addClass 'btn-default'
+			$(this).removeClass 'btn-success'
+			$(this).prop 'data-grouped', false
+		else
+			$(this).removeClass 'btn-default'
+			$(this).addClass 'btn-success'
+			$(this).prop 'data-grouped', true
+
+	$('#group_chart01').click ->
+		run_query_art_count client, '#chart01'
+
+	$('#group_chart02').click ->
+		run_query_art_daily_count client, '#chart02'
+
 	return
 
 $(document).ready ready
@@ -124,7 +140,16 @@ init_or_switch_data = (element) ->
 	#console.log all_json[element]
 	return
 
-fill_in_new_data = (res, element, name_getter, value_getter) ->
+fill_in_new_data_simple = (res, element) ->
+	if all_json[element]['data']['Total'] == undefined
+		all_json[element]['data']['Total'] = {}
+		all_json[element]['data']['Total']['old'] = 0
+	all_json[element]['data']['Total']['new'] = res.result
+
+	#console.log all_json[element]
+	return
+
+fill_in_new_data_grouped = (res, element, name_getter, value_getter) ->
 	i = 0
 	while i < res.result.length
 		name = (name_getter res.result[i]) #.replace /[^A-Za-z0-9]/g, ''
@@ -176,7 +201,8 @@ build_query = ->
 run_query_art_count = (client, element) ->
 	k_query = build_query()
 	k_query['eventCollection'] = 'artSeen'
-	k_query['groupBy'] = 'picName'
+	if $('#group_chart01').prop 'data-grouped'
+		k_query['groupBy'] = 'picName'
 
 	query_art_count = new (Keen.Query)('count', k_query)
 
@@ -186,9 +212,14 @@ run_query_art_count = (client, element) ->
 	client.run query_art_count, (err, res) ->
 		if err
 		else
+			console.log res
+
 			init_or_switch_data element
 
-			fill_in_new_data res, element, get_pic_name, get_pic_value
+			if $('#group_chart01').prop 'data-grouped'
+				fill_in_new_data_grouped res, element, get_pic_name, get_pic_value
+			else
+				fill_in_new_data_simple res, element
 
 			remove_empty_data element
 
@@ -200,6 +231,8 @@ run_query_art_count = (client, element) ->
 run_query_art_daily_count = (client, element) ->
 	k_query = build_query()
 	k_query['eventCollection'] = 'artSeen'
+	if $('#group_chart02').prop 'data-grouped'
+		k_query['groupBy'] = 'picName'
 	k_query['interval'] = 'daily'
 
 	query_art_count = new (Keen.Query)('count', k_query)
@@ -224,10 +257,25 @@ run_query_art_daily_count = (client, element) ->
 				xdate = moment(res['result'][i]['timeframe']['start'])
 				if moment().isAfter(xdate)
 					all_json[element].data.xDataset.push xdate.format('YYYY-MM-DD')
-					if i==0
-						all_json[element].data.yDataset.push ['Pictures Seen']
-					all_json[element].data.yDataset[0].push res['result'][i].value
+					if $('#group_chart02').prop 'data-grouped'
+						j=0
+						#console.log res['result'][i].value
+						while j < res['result'][i].value.length
+							console.log 'i=' + i + ' j=' + j
+							console.log res['result'][i].value[j]
+							if i==0
+								all_json[element].data.yDataset.push []
+								all_json[element].data.yDataset[j].push res['result'][i].value[j]['picName']
+							all_json[element].data.yDataset[j].push res['result'][i].value[j].result
+							console.log all_json[element].data.yDataset
+							j++
+					else
+						if i==0
+							all_json[element].data.yDataset.push ['Pictures Seen']
+						all_json[element].data.yDataset[0].push res['result'][i].value
 				i++
+
+			#console.log all_json[element].data
 
 			draw1LineGraph element, false
 		return
