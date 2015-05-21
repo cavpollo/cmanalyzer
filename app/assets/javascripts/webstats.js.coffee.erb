@@ -222,11 +222,16 @@ build_query = ->
 			the_versions.push $(this).val()
 	)
 
+	the_query['filters'] = [{
+		property_name: 'test'
+		operator: 'eq'
+		property_value: false}]
+
 	if the_versions.length > 0
-		the_query['filters'] = [
-			{property_name: 'version'
+		the_query['filters'].push {
+			property_name: 'version'
 			operator: 'in'
-			property_value: the_versions}]
+			property_value: the_versions}
 
 	the_query['timeframe'] =
 		{start: startDate
