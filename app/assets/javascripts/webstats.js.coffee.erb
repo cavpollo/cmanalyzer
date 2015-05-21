@@ -3,7 +3,11 @@
 # You can use CoffeeScript in this file: http://coffeescript.org/
 
 all_json = {}
+chartPie = {}
+chartLine = {}
 #hooverText = {}
+startDate = moment().subtract(7, 'days').toISOString()
+endDate = moment().toISOString()
 
 ready = ->
 	client = new Keen(
@@ -18,13 +22,13 @@ ready = ->
 	if $('body.webstats.art').length
 		query_and_draw client
 
-	$('#daterange span').html(moment().subtract(29, 'days').format('D/MMMM/YYYY') + ' - ' + moment().format('D/MMMM/YYYY'));
+	$('#daterange span').html(moment().subtract(7, 'days').format('D/MM/YYYY') + ' - ' + moment().format('D/MM/YYYY'));
 	$('#daterange').daterangepicker {
 			format: 'DD/MM/YYYY',
-			startDate: moment().subtract(29, 'days'),
+			startDate: moment().subtract(7, 'days'),
 			endDate: moment(),
-			minDate: '01/01/2012',
-			maxDate: '31/12/2015',
+			minDate: '01/07/2014',
+			maxDate: '31/12/2016',
 			dateLimit: { years: 5 },
 			showDropdowns: true,
 			showWeekNumbers: false,
@@ -60,32 +64,10 @@ ready = ->
 			return
 
 	$('#daterange').on 'apply.daterangepicker', (ev, picker) ->
-		$('#daterange span').html(picker.startDate.format('D/MMMM/YYYY') + ' - ' + picker.endDate.format('D/MMMM/YYYY'));
+		$('#daterange span').html(picker.startDate.format('D/MM/YYYY') + ' - ' + picker.endDate.format('D/MM/YYYY'));
 
-		$('.time-span').removeClass('btn-success')
-		$('#daterange').removeClass('btn-default')
-		$('.time-span').addClass('btn-default')
-		$('#daterange').addClass('btn-success')
-
-		$('#time_span').val ''
-		$('#time_span').attr 'fromDate', picker.startDate.toISOString()
-		$('#time_span').attr 'toDate', picker.endDate.toISOString()
-
-		query_and_draw client
-		return
-
-
-	$('.time-span').click ->
-		$('.time-span').removeClass('btn-success')
-		$('#daterange').removeClass('btn-success')
-		$('.time-span').addClass('btn-default')
-		$('#daterange').addClass('btn-default')
-		$(this).removeClass('btn-default')
-		$(this).addClass('btn-success')
-
-		$('#time_span').val $(this).attr('data-time')
-		$('#time_span').attr 'fromDate', ''
-		$('#time_span').attr 'toDate', ''
+		startDate = picker.startDate.toISOString()
+		endDate = picker.endDate.toISOString()
 
 		query_and_draw client
 		return
@@ -93,22 +75,72 @@ ready = ->
 	$('#version').change ->
 		query_and_draw client
 
-	$('.group-button').click ->
-		if $(this).prop 'data-grouped'
-			$(this).addClass 'btn-default'
-			$(this).removeClass 'btn-success'
-			$(this).prop 'data-grouped', false
+	$('.data-version').click ->
+		$(this).toggleClass 'btn-default'
+		$(this).toggleClass 'btn-success'
+
+		if $(this).prop 'dataFilter'
+			$(this).prop 'dataFilter', false
 		else
-			$(this).removeClass 'btn-default'
-			$(this).addClass 'btn-success'
-			$(this).prop 'data-grouped', true
+			$(this).prop 'dataFilter', true
+
+		query_and_draw client
+		return
+
+#	$('.group-button').click ->
+#		if $(this).prop 'data-grouped'
+#			$(this).addClass 'btn-default'
+#			$(this).removeClass 'btn-success'
+#			$(this).prop 'data-grouped', false
+#		else
+#			$('.group-button').addClass 'btn-default'
+#			$('.group-button').removeClass 'btn-success'
+#			$('.group-button').prop 'data-grouped', false
+#			$(this).addClass 'btn-success'
+#			$(this).prop 'data-grouped', true
+#		return
 
 	$('#group_chart01').click ->
 		run_query_art_count client, '#chart01'
 
-	$('#group_chart02').click ->
+	$('#groupP_chart02').click ->
+		if $(this).prop 'data-grouped'
+			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+		else
+			$('#groupV_chart02').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'picName')
 		run_query_art_daily_count client, '#chart02'
+		return
 
+	$('#groupV_chart02').click ->
+		if $(this).prop 'data-grouped'
+			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+		else
+			$('#groupP_chart02').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'version')
+		run_query_art_daily_count client, '#chart02'
+		return
+
+	$('#groupP_chart03').click ->
+		if $(this).prop 'data-grouped'
+			$('#groupV_chart03').removeClass('btn-default').addClass('btn-success').attr('data-grouped')
+			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+		else
+			$('#groupV_chart03').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'picName')
+		run_query_art_group_count client, '#chart03'
+		return
+
+	$('#groupV_chart03').click ->
+		if $(this).prop 'data-grouped'
+			$('#groupP_chart03').removeClass('btn-default').addClass('btn-success').attr('data-grouped')
+			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+		else
+			$('#groupP_chart03').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'version')
+		run_query_art_group_count client, '#chart03'
+		return
+		
 	return
 
 $(document).ready ready
@@ -116,6 +148,7 @@ $(document).on 'page:load', ready
 
 query_and_draw = (client) ->
 	run_query_art_count client, '#chart01'
+	run_query_art_group_count client, '#chart03'
 	run_query_art_daily_count client, '#chart02'
 
 refresh_graphs = ->
@@ -183,18 +216,21 @@ get_pic_value = (value) ->
 build_query = ->
 	the_query = {}
 
-	if $('#version').val() != ''
-		the_query['filters'] = [
-			{property_name:'version'
-			operator:'eq'
-			property_value: $('#version').val()}]
+	the_versions = []
+	$('.data-version').each( ->
+		if $(this).prop 'dataFilter'
+			the_versions.push $(this).val()
+	)
 
-	if $('#time_span').val() && $('#time_span').val() != ''
-		the_query['timeframe'] = $('#time_span').val()
-	else
-		the_query['timeframe'] =
-			{start: $('#time_span').attr 'fromdate'
-			end: $('#time_span').attr 'todate'}
+	if the_versions.length > 0
+		the_query['filters'] = [
+			{property_name: 'version'
+			operator: 'in'
+			property_value: the_versions}]
+
+	the_query['timeframe'] =
+		{start: startDate
+		end: endDate}
 
 	return the_query
 
@@ -212,8 +248,6 @@ run_query_art_count = (client, element) ->
 	client.run query_art_count, (err, res) ->
 		if err
 		else
-			console.log res
-
 			init_or_switch_data element
 
 			if $('#group_chart01').prop 'data-grouped'
@@ -228,11 +262,49 @@ run_query_art_count = (client, element) ->
 
 	return
 
+run_query_art_group_count = (client, element) ->
+	k_query = build_query()
+	k_query['eventCollection'] = 'artSeen'
+	group = ''
+	if $('#groupP_chart03').attr 'data-grouped'
+		k_query['groupBy'] = 'picName'
+		group = 'picName'
+	if $('#groupV_chart03').attr 'data-grouped'
+		k_query['groupBy'] = 'version'
+		group = 'version'
+
+	query_art_count = new (Keen.Query)('count', k_query)
+
+	#clocky thingy
+	$(element).append '<div class="loady"><div class="arc1"></div></div>'
+
+	client.run query_art_count, (err, res) ->
+		if err
+		else
+			dataset = []
+
+			j=0
+			while j < res['result'].length
+				dataset.push []
+				dataset[j].push res['result'][j][group]
+				dataset[j].push res['result'][j].result
+				j++
+
+			drawPieGraph element, dataset
+		return
+
+	return
+
 run_query_art_daily_count = (client, element) ->
 	k_query = build_query()
 	k_query['eventCollection'] = 'artSeen'
-	if $('#group_chart02').prop 'data-grouped'
+	group = ''
+	if $('#groupP_chart02').attr 'data-grouped'
 		k_query['groupBy'] = 'picName'
+		group = 'picName'
+	if $('#groupV_chart02').attr 'data-grouped'
+		k_query['groupBy'] = 'version'
+		group = 'version'
 	k_query['interval'] = 'daily'
 
 	query_art_count = new (Keen.Query)('count', k_query)
@@ -257,17 +329,14 @@ run_query_art_daily_count = (client, element) ->
 				xdate = moment(res['result'][i]['timeframe']['start'])
 				if moment().isAfter(xdate)
 					all_json[element].data.xDataset.push xdate.format('YYYY-MM-DD')
-					if $('#group_chart02').prop 'data-grouped'
+					if group != ''
 						j=0
 						#console.log res['result'][i].value
 						while j < res['result'][i].value.length
-							console.log 'i=' + i + ' j=' + j
-							console.log res['result'][i].value[j]
 							if i==0
 								all_json[element].data.yDataset.push []
-								all_json[element].data.yDataset[j].push res['result'][i].value[j]['picName']
+								all_json[element].data.yDataset[j].push res['result'][i].value[j][group]
 							all_json[element].data.yDataset[j].push res['result'][i].value[j].result
-							console.log all_json[element].data.yDataset
 							j++
 					else
 						if i==0
@@ -561,8 +630,8 @@ drawBar = (element, resize) ->
 draw1LineGraph = (element, resize) ->
 	$(element).html('');
 
-	if chartLine
-		chartLine.remove()
+#	if chartLine
+#		chartLine.remove()
 
 	chartColumns = []
 	chartColumns.push all_json[element]['data']['xDataset']
@@ -593,6 +662,46 @@ draw1LineGraph = (element, resize) ->
 			width: $(element).width()
 		}
 	})
+
+	return
+
+drawPieGraph = (element, dataset) ->
+	$(element + ' > div.loady').remove()
+
+	chartColumns = []
+	i = 0
+	while i < dataset.length
+		chartColumns.push dataset[i]
+		i++
+
+	if chartPie[element]
+		unload_array = $.map chartPie[element].data(), (value, index) ->
+			return value.id
+		chartPie[element].load({
+			columns: chartColumns
+			unload: unload_array
+		})
+	else
+		chartPie[element] = c3.generate({
+			bindto: element
+			data: {
+				columns: chartColumns
+				type: 'pie'
+			}
+			legend: {
+				position: 'right'
+			}
+			size: {
+				height: $(element).height()
+				width: $(element).width()
+			}
+			tooltip:
+				format:
+					title: (d) ->
+						return d
+					value: (value, ratio, id) ->
+						return value + ' - ' + Math.floor(ratio*100) + '%'
+		})
 
 	return
 
