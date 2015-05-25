@@ -6,8 +6,8 @@ all_json = {}
 chartPie = {}
 chartLine = {}
 #hooverText = {}
-startDate = moment().subtract(7, 'days').toISOString()
-endDate = moment().toISOString()
+startDate = moment().subtract(6, 'days')
+endDate = moment().add(1, 'days')
 
 ready = ->
 	client = new Keen(
@@ -25,8 +25,8 @@ ready = ->
 	$('#daterange span').html(moment().subtract(7, 'days').format('D/MM/YYYY') + ' - ' + moment().format('D/MM/YYYY'));
 	$('#daterange').daterangepicker {
 			format: 'DD/MM/YYYY',
-			startDate: moment().subtract(7, 'days'),
-			endDate: moment(),
+			startDate: moment().subtract(7, 'days').format('DD/MM/YYYY'),
+			endDate: moment().format('DD/MM/YYYY'),
 			minDate: '01/07/2014',
 			maxDate: '31/12/2016',
 			dateLimit: { years: 5 },
@@ -66,8 +66,8 @@ ready = ->
 	$('#daterange').on 'apply.daterangepicker', (ev, picker) ->
 		$('#daterange span').html(picker.startDate.format('D/MM/YYYY') + ' - ' + picker.endDate.format('D/MM/YYYY'));
 
-		startDate = picker.startDate.toISOString()
-		endDate = picker.endDate.toISOString()
+		startDate = picker.startDate
+		endDate = picker.endDate.add(1, 'days')
 
 		query_and_draw client
 		return
@@ -222,10 +222,7 @@ build_query = ->
 			the_versions.push $(this).val()
 	)
 
-	the_query['filters'] = [{
-		property_name: 'test'
-		operator: 'eq'
-		property_value: false}]
+	the_query['filters'] = []
 
 	if the_versions.length > 0
 		the_query['filters'].push {
@@ -234,16 +231,37 @@ build_query = ->
 			property_value: the_versions}
 
 	the_query['timeframe'] =
-		{start: startDate
-		end: endDate}
+		{start: startDate.format('YYYY-MM-DD') + 'T00:00:00.000Z'
+		end: endDate.format('YYYY-MM-DD') + 'T00:00:00.000Z'}
 
 	return the_query
+
+no_tests = (qq) ->
+	the_q = qq
+	the_q['filters'].push {
+		property_name: 'test'
+		operator: 'eq'
+		property_value: false}
+	return the_q
+
+test_doest_exist = (qq) ->
+	the_q = qq
+	the_q['filters'].push {
+		property_name: 'test'
+		operator: 'exists'
+		property_value: false}
+	return the_q
 
 run_query_art_count = (client, element) ->
 	k_query = build_query()
 	k_query['eventCollection'] = 'artSeen'
 	if $('#group_chart01').prop 'data-grouped'
 		k_query['groupBy'] = 'picName'
+
+	#	the_query['filters'].push {
+	#		property_name: 'test'
+	#		operator: 'eq'
+	#		property_value: false}
 
 	query_art_count = new (Keen.Query)('count', k_query)
 
@@ -301,25 +319,33 @@ run_query_art_group_count = (client, element) ->
 	return
 
 run_query_art_daily_count = (client, element) ->
-	k_query = build_query()
-	k_query['eventCollection'] = 'artSeen'
+	k_query1 = build_query()
+	k_query2 = build_query()
+	k_query1['eventCollection'] = 'artSeen'
+	k_query2['eventCollection'] = 'artSeen'
 	group = ''
 	if $('#groupP_chart02').attr 'data-grouped'
-		k_query['groupBy'] = 'picName'
+		k_query1['groupBy'] = 'picName'
+		k_query2['groupBy'] = 'picName'
 		group = 'picName'
 	if $('#groupV_chart02').attr 'data-grouped'
-		k_query['groupBy'] = 'version'
+		k_query1['groupBy'] = 'version'
+		k_query2['groupBy'] = 'version'
 		group = 'version'
-	k_query['interval'] = 'daily'
+	k_query1['interval'] = 'daily'
+	k_query2['interval'] = 'daily'
 
-	query_art_count = new (Keen.Query)('count', k_query)
+	query_art_count1 = new (Keen.Query)('count', no_tests(k_query1))
+	query_art_count2 = new (Keen.Query)('count', test_doest_exist(k_query2))
 
 	#clocky thingy
 	$(element).append '<div class="loady"><div class="arc1"></div></div>'
 
-	client.run query_art_count, (err, res) ->
+	client.run [query_art_count1, query_art_count2], (err, res) ->
 		if err
 		else
+			console.log res
+
 			all_json[element] = {
 				data: {
 					xDataset: ['x']
@@ -329,24 +355,80 @@ run_query_art_daily_count = (client, element) ->
 
 			#console.log res
 
+			i=1
+			j=0
+			quack = res[0]['result']
+			#console.log quack
+			while i < res.length
+				z=0
+				while j < res[i]['result'].length
+					#console.log 'i='+i+' j='+j+' z='+z
+					#todo: no z results
+					if z < quack.length
+						zdate = moment(quack[z]['timeframe']['start'], 'YYYY-MM-DD')
+					ijdate = moment(res[i]['result'][j]['timeframe']['start'], 'YYYY-MM-DD')
+					#console.log 'date ij: ' + ijdate.format('YYYY-MM-DD') + ' , z = ' + zdate.format('YYYY-MM-DD')
+					while moment(ijdate).isAfter(zdate) && z < quack.length
+						z++
+						if z < quack.length
+							zdate = moment(quack[z]['timeframe']['start'], 'YYYY-MM-DD')
+							#console.log 'date ij: ' + ijdate.format('YYYY-MM-DD') + ' , z = ' + zdate.format('YYYY-MM-DD')
+
+					#date exists?
+					if moment(ijdate).isSame(zdate)
+						#join
+						if group != ''
+							#console.log 'in group'
+							#console.log res[i]['result'][j].value
+							#group exists?
+							k = 0
+							while k < res[i]['result'][j].value.length
+								l = 0
+								found = false
+								while l < quack[z].value.length
+									if quack[z].value[l][group] == res[i]['result'][j].value[k][group]
+										found = true
+										break
+									l++
+								if found
+									#exists join
+									#console.log 'join group ' + res[i]['result'][j].value[k][group] + ', ' + quack[z].value[l]['result'] + ' with ' + res[i]['result'][j].value[k]['result']
+									quack[z].value[l]['result'] += res[i]['result'][j].value[k]['result']
+								else
+									#new insert
+									#console.log 'insert group ' + res[i]['result'][j].value[k][group]
+									quack[z].value.splice quack[z].value.length, 0, res[i]['result'][j].value[k]
+								k++
+						else
+							#console.log 'join ' + ijdate.format('YYYY-MM-DD') + ' with ' + zdate.format('YYYY-MM-DD')
+							quack[z].value += res[i]['result'][j].value
+					else
+						#insert
+						#console.log 'insert ' + ijdate.format('YYYY-MM-DD') + ' before ' + zdate.format('YYYY-MM-DD')
+						quack.splice z,0, res[i]['result'][j]
+
+					j++
+				i++
+			#console.log quack
+			#console.log 'out'
+
 			i=0
-			while i < res['result'].length
-				xdate = moment(res['result'][i]['timeframe']['start'])
+			while i < quack.length
+				xdate = moment(quack[i]['timeframe']['start'])
 				if moment().isAfter(xdate)
-					all_json[element].data.xDataset.push xdate.format('YYYY-MM-DD')
+					all_json[element].data.xDataset.push xdate.add(1, 'days').format('YYYY-MM-DD')
 					if group != ''
 						j=0
-						#console.log res['result'][i].value
-						while j < res['result'][i].value.length
+						while j < quack[i].value.length
 							if i==0
 								all_json[element].data.yDataset.push []
-								all_json[element].data.yDataset[j].push res['result'][i].value[j][group]
-							all_json[element].data.yDataset[j].push res['result'][i].value[j].result
+								all_json[element].data.yDataset[j].push quack[i].value[j][group]
+							all_json[element].data.yDataset[j].push quack[i].value[j].result
 							j++
 					else
 						if i==0
 							all_json[element].data.yDataset.push ['Pictures Seen']
-						all_json[element].data.yDataset[0].push res['result'][i].value
+						all_json[element].data.yDataset[0].push quack[i].value
 				i++
 
 			#console.log all_json[element].data
@@ -652,7 +734,7 @@ draw1LineGraph = (element, resize) ->
 			x: {
 				type: 'timeseries'
 				tick: {
-					format: '%d-%m-%Y'
+					format: '%d/%m/%Y'
 				}
 			}
 		}
