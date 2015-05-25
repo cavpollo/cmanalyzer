@@ -286,32 +286,67 @@ run_query_art_count = (client, element) ->
 	return
 
 run_query_art_group_count = (client, element) ->
-	k_query = build_query()
-	k_query['eventCollection'] = 'artSeen'
+	k_query1 = build_query()
+	k_query2 = build_query()
+	k_query1['eventCollection'] = 'artSeen'
+	k_query2['eventCollection'] = 'artSeen'
 	group = ''
 	if $('#groupP_chart03').attr 'data-grouped'
-		k_query['groupBy'] = 'picName'
+		k_query1['groupBy'] = 'picName'
+		k_query2['groupBy'] = 'picName'
 		group = 'picName'
 	if $('#groupV_chart03').attr 'data-grouped'
-		k_query['groupBy'] = 'version'
+		k_query1['groupBy'] = 'version'
+		k_query2['groupBy'] = 'version'
 		group = 'version'
 
-	query_art_count = new (Keen.Query)('count', k_query)
+	query_art_count1 = new (Keen.Query)('count', no_tests(k_query1))
+	query_art_count2 = new (Keen.Query)('count', test_doest_exist(k_query2))
 
 	#clocky thingy
 	$(element).append '<div class="loady"><div class="arc1"></div></div>'
 
-	client.run query_art_count, (err, res) ->
+	client.run [query_art_count1, query_art_count2], (err, res) ->
 		if err
 		else
+			console.log res
+
 			dataset = []
 
+			quack = res[0]['result']
+			i=1
 			j=0
-			while j < res['result'].length
+			while i < res.length
+				while j < res[i]['result'].length
+					console.log res[i]['result'][j]
+					#group exists?
+					l = 0
+					found = false
+					while l < quack.length
+						if quack[l][group] == res[i]['result'][j][group]
+							found = true
+							break
+						l++
+					if found
+						#exists join
+						console.log 'join group ' + res[i]['result'][j][group] + ', ' + quack[l]['result'] + ' with ' + res[i]['result'][j]['result']
+						quack[l]['result'] += res[i]['result'][j]['result']
+					else
+						#new insert
+						console.log 'insert group ' + res[i]['result'][j][group]
+						quack.splice quack.length, 0, res[i]['result'][j]
+
+					j++
+				i++
+
+			console.log quack
+
+			i=0
+			while i < quack.length
 				dataset.push []
-				dataset[j].push res['result'][j][group]
-				dataset[j].push res['result'][j].result
-				j++
+				dataset[i].push quack[i][group]
+				dataset[i].push quack[i].result
+				i++
 
 			drawPieGraph element, dataset
 		return
@@ -344,7 +379,7 @@ run_query_art_daily_count = (client, element) ->
 	client.run [query_art_count1, query_art_count2], (err, res) ->
 		if err
 		else
-			console.log res
+			#console.log res
 
 			all_json[element] = {
 				data: {
@@ -352,8 +387,6 @@ run_query_art_daily_count = (client, element) ->
 					yDataset: []
 				}
 			}
-
-			#console.log res
 
 			i=1
 			j=0
@@ -363,19 +396,20 @@ run_query_art_daily_count = (client, element) ->
 				z=0
 				while j < res[i]['result'].length
 					#console.log 'i='+i+' j='+j+' z='+z
-					#todo: no z results
-					if z < quack.length
-						zdate = moment(quack[z]['timeframe']['start'], 'YYYY-MM-DD')
-					ijdate = moment(res[i]['result'][j]['timeframe']['start'], 'YYYY-MM-DD')
-					#console.log 'date ij: ' + ijdate.format('YYYY-MM-DD') + ' , z = ' + zdate.format('YYYY-MM-DD')
-					while moment(ijdate).isAfter(zdate) && z < quack.length
-						z++
+					#in case no z results
+					if quack.length > 0
 						if z < quack.length
 							zdate = moment(quack[z]['timeframe']['start'], 'YYYY-MM-DD')
-							#console.log 'date ij: ' + ijdate.format('YYYY-MM-DD') + ' , z = ' + zdate.format('YYYY-MM-DD')
+						ijdate = moment(res[i]['result'][j]['timeframe']['start'], 'YYYY-MM-DD')
+						#console.log 'date ij: ' + ijdate.format('YYYY-MM-DD') + ' , z = ' + zdate.format('YYYY-MM-DD')
+						while moment(ijdate).isAfter(zdate) && z < quack.length
+							z++
+							if z < quack.length
+								zdate = moment(quack[z]['timeframe']['start'], 'YYYY-MM-DD')
+								#console.log 'date ij: ' + ijdate.format('YYYY-MM-DD') + ' , z = ' + zdate.format('YYYY-MM-DD')
 
 					#date exists?
-					if moment(ijdate).isSame(zdate)
+					if quack.length > 0 && moment(ijdate).isSame(zdate)
 						#join
 						if group != ''
 							#console.log 'in group'
