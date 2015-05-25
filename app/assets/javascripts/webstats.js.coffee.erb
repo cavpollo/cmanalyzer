@@ -27,7 +27,7 @@ ready = ->
 			format: 'DD/MM/YYYY',
 			startDate: moment().subtract(7, 'days').format('DD/MM/YYYY'),
 			endDate: moment().format('DD/MM/YYYY'),
-			minDate: '01/07/2014',
+			minDate: '23/07/2014',
 			maxDate: '31/12/2016',
 			dateLimit: { years: 5 },
 			showDropdowns: true,
@@ -399,6 +399,7 @@ run_query_art_daily_count = (client, element) ->
 				data: {
 					xDataset: ['x']
 					yDataset: []
+					linesDataset: []
 				}
 			}
 
@@ -475,9 +476,24 @@ run_query_art_daily_count = (client, element) ->
 							j++
 					else
 						if i==0
-							all_json[element].data.yDataset.push ['Pictures Seen']
+							all_json[element].data.yDataset.push ['All']
 						all_json[element].data.yDataset[0].push quack[i].value
 				i++
+
+			#console.log all_json[element].data
+
+			all_json[element].data.linesDataset.push {value: '2015-05-14', text: 'TV Show Tuti'} #8PM, also 2015-05-15 12PM
+			#all_json[element].data.linesDataset.push {value: '2015-05-14', text: 'End FB Ads'} #12:55... Too Crammed
+			all_json[element].data.linesDataset.push {value: '2015-05-11', text: 'Start FB Ads'} #13:17
+			all_json[element].data.linesDataset.push {value: '2014-10-22', text: 'v2.4.1'}
+			#all_json[element].data.linesDataset.push {value: '2014-10-22', text: 'v2.4.0'} Negiglible...
+			#all_json[element].data.linesDataset.push {value: '2014-10-21', text: 'v2.3.5'} #Mess up fixed day after
+			all_json[element].data.linesDataset.push {value: '2014-09-14', text: 'v2.3.1'}
+			#all_json[element].data.linesDataset.push {value: '2014-09-14', text: 'v2.3.0'} Negiglible...
+			all_json[element].data.linesDataset.push {value: '2014-07-24', text: 'v2.1.1'}
+			#all_json[element].data.linesDataset.push {value: '2014-07-24', text: 'v2.1.0'} Negiglible
+			#all_json[element].data.linesDataset.push {value: '2014-06-05', text: 'v1.1.0'} Stuck in flurry...
+			#all_json[element].data.linesDataset.push {value: '2014-06-03', text: 'v1.0.14'} Stuck in flurry...
 
 			#console.log all_json[element].data
 
@@ -779,49 +795,51 @@ draw1LineGraph = (element, stacked, resize) ->
 		chartTypes[all_json[element]['data']['yDataset'][i][0]] = 'area' #'area-spline'
 		i++
 
+	chart_data = {
+		x: 'x'
+		columns: chartColumns
+		types: chartTypes
+	}
 	if stacked
-		chartLine = c3.generate({
-			axis: {
-				x: {
-					type: 'timeseries'
-					tick: {
-						format: '%d/%m/%Y'
-					}
+		chart_data['groups'] = [chartGroups]
+
+	i=0
+	chart_lines = []
+	while i < all_json[element]['data']['linesDataset'].length
+		chart_lines.push {value: all_json[element]['data']['linesDataset'][i]['value'], text: all_json[element]['data']['linesDataset'][i]['text']}
+		i++
+
+	console.log chart_lines
+
+	chartLine = c3.generate({
+		axis: {
+			x: {
+				label:
+					position: 'outer-center'
+					text: 'date'
+				type: 'timeseries'
+				tick: {
+					format: '%d/%m/%Y'
 				}
 			}
-			bindto: element
-			data: {
-				x: 'x'
-				columns: chartColumns
-				types: chartTypes
-				groups: [chartGroups]
+			y: {
+				label:
+					position: 'outer-middle'
+					text: 'unfolded count'
 			}
-			size: {
-				height: $(element).height()
-				width: $(element).width()
+		}
+		bindto: element
+		data: chart_data
+		grid: {
+			x: {
+				lines: chart_lines
 			}
-		})
-	else
-		chartLine = c3.generate({
-			axis: {
-				x: {
-					type: 'timeseries'
-					tick: {
-						format: '%d/%m/%Y'
-					}
-				}
-			}
-			bindto: element
-			data: {
-				x: 'x'
-				columns: chartColumns
-				types: chartTypes
-			}
-			size: {
-				height: $(element).height()
-				width: $(element).width()
-			}
-		})
+		}
+		size: {
+			height: $(element).height()
+			width: $(element).width()
+		}
+	})
 
 	return
 
