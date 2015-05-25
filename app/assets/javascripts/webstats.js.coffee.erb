@@ -103,21 +103,35 @@ ready = ->
 	$('#group_chart01').click ->
 		run_query_art_count client, '#chart01'
 
+	$('#stack_chart02').click ->
+		if $(this).attr 'data-stacked'
+			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-stacked')
+			stacked = false
+		else
+			$(this).removeClass('btn-default').addClass('btn-success').attr('data-stacked', 'true')
+			stacked = true
+		draw1LineGraph '#chart02', stacked, false
+		return
+
 	$('#groupP_chart02').click ->
-		if $(this).prop 'data-grouped'
+		if $(this).attr 'data-grouped'
 			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+			$('#stack_chart02').addClass('disabled').addClass('btn-default').removeClass('btn-success').removeAttr('data-stacked')
 		else
 			$('#groupV_chart02').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
 			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'picName')
+			$('#stack_chart02').removeClass('disabled')
 		run_query_art_daily_count client, '#chart02'
 		return
 
 	$('#groupV_chart02').click ->
-		if $(this).prop 'data-grouped'
+		if $(this).attr 'data-grouped'
 			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
+			$('#stack_chart02').addClass('disabled').addClass('btn-default').removeClass('btn-success').removeAttr('data-stacked')
 		else
 			$('#groupP_chart02').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
 			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'version')
+			$('#stack_chart02').removeClass('disabled')
 		run_query_art_daily_count client, '#chart02'
 		return
 
@@ -154,8 +168,6 @@ query_and_draw = (client) ->
 refresh_graphs = ->
 	if all_json['#chart01']
 		drawBar '#chart01', true
-	if all_json['#chart02']
-		draw1LineGraph '#chart02', true
 	return
 
 init_or_switch_data = (element) ->
@@ -255,7 +267,7 @@ test_doest_exist = (qq) ->
 run_query_art_count = (client, element) ->
 	k_query = build_query()
 	k_query['eventCollection'] = 'artSeen'
-	if $('#group_chart01').prop 'data-grouped'
+	if $('#group_chart01').attr 'data-grouped'
 		k_query['groupBy'] = 'picName'
 
 	#	the_query['filters'].push {
@@ -273,7 +285,7 @@ run_query_art_count = (client, element) ->
 		else
 			init_or_switch_data element
 
-			if $('#group_chart01').prop 'data-grouped'
+			if $('#group_chart01').attr 'data-grouped'
 				fill_in_new_data_grouped res, element, get_pic_name, get_pic_value
 			else
 				fill_in_new_data_simple res, element
@@ -309,7 +321,7 @@ run_query_art_group_count = (client, element) ->
 	client.run [query_art_count1, query_art_count2], (err, res) ->
 		if err
 		else
-			console.log res
+			#console.log res
 
 			dataset = []
 
@@ -318,7 +330,6 @@ run_query_art_group_count = (client, element) ->
 			j=0
 			while i < res.length
 				while j < res[i]['result'].length
-					console.log res[i]['result'][j]
 					#group exists?
 					l = 0
 					found = false
@@ -329,17 +340,17 @@ run_query_art_group_count = (client, element) ->
 						l++
 					if found
 						#exists join
-						console.log 'join group ' + res[i]['result'][j][group] + ', ' + quack[l]['result'] + ' with ' + res[i]['result'][j]['result']
+						#console.log 'join group ' + res[i]['result'][j][group] + ', ' + quack[l]['result'] + ' with ' + res[i]['result'][j]['result']
 						quack[l]['result'] += res[i]['result'][j]['result']
 					else
 						#new insert
-						console.log 'insert group ' + res[i]['result'][j][group]
+						#console.log 'insert group ' + res[i]['result'][j][group]
 						quack.splice quack.length, 0, res[i]['result'][j]
 
 					j++
 				i++
 
-			console.log quack
+			#console.log quack
 
 			i=0
 			while i < quack.length
@@ -359,6 +370,9 @@ run_query_art_daily_count = (client, element) ->
 	k_query1['eventCollection'] = 'artSeen'
 	k_query2['eventCollection'] = 'artSeen'
 	group = ''
+	stack = false
+	if $('#stack_chart02').attr 'data-stacked'
+		stack = true
 	if $('#groupP_chart02').attr 'data-grouped'
 		k_query1['groupBy'] = 'picName'
 		k_query2['groupBy'] = 'picName'
@@ -467,7 +481,7 @@ run_query_art_daily_count = (client, element) ->
 
 			#console.log all_json[element].data
 
-			draw1LineGraph element, false
+			draw1LineGraph element, stack, false
 		return
 
 	return
@@ -748,7 +762,7 @@ drawBar = (element, resize) ->
 		return v
 	return
 
-draw1LineGraph = (element, resize) ->
+draw1LineGraph = (element, stacked, resize) ->
 	$(element).html('');
 
 #	if chartLine
@@ -756,33 +770,58 @@ draw1LineGraph = (element, resize) ->
 
 	chartColumns = []
 	chartColumns.push all_json[element]['data']['xDataset']
+	chartGroups = []
 	chartTypes = {}
 	i = 0
 	while i < all_json[element]['data']['yDataset'].length
 		chartColumns.push all_json[element]['data']['yDataset'][i]
+		chartGroups.push all_json[element]['data']['yDataset'][i][0]
 		chartTypes[all_json[element]['data']['yDataset'][i][0]] = 'area' #'area-spline'
 		i++
 
-	chartLine = c3.generate({
-		axis: {
-			x: {
-				type: 'timeseries'
-				tick: {
-					format: '%d/%m/%Y'
+	if stacked
+		chartLine = c3.generate({
+			axis: {
+				x: {
+					type: 'timeseries'
+					tick: {
+						format: '%d/%m/%Y'
+					}
 				}
 			}
-		}
-		bindto: element
-		data: {
-			x: 'x'
-			columns: chartColumns
-			types: chartTypes
-		}
-		size: {
-			height: $(element).height()
-			width: $(element).width()
-		}
-	})
+			bindto: element
+			data: {
+				x: 'x'
+				columns: chartColumns
+				types: chartTypes
+				groups: [chartGroups]
+			}
+			size: {
+				height: $(element).height()
+				width: $(element).width()
+			}
+		})
+	else
+		chartLine = c3.generate({
+			axis: {
+				x: {
+					type: 'timeseries'
+					tick: {
+						format: '%d/%m/%Y'
+					}
+				}
+			}
+			bindto: element
+			data: {
+				x: 'x'
+				columns: chartColumns
+				types: chartTypes
+			}
+			size: {
+				height: $(element).height()
+				width: $(element).width()
+			}
+		})
 
 	return
 
