@@ -101,7 +101,7 @@ ready = ->
 #		return
 
 	$('#group_chart01').click ->
-		run_query_art_count client, '#chart01'
+		run_query_art_count_oldbar client, '#chart01'
 
 	$('#stack_chart02').click ->
 		if $(this).attr 'data-stacked'
@@ -161,7 +161,8 @@ $(document).ready ready
 $(document).on 'page:load', ready
 
 query_and_draw = (client) ->
-	run_query_art_count client, '#chart01'
+	run_query_art_count client, '#chart04'
+	run_query_art_count_oldbar client, '#chart01'
 	run_query_art_group_count client, '#chart03'
 	run_query_art_daily_count client, '#chart02'
 
@@ -264,7 +265,7 @@ test_doest_exist = (qq) ->
 		property_value: false}
 	return the_q
 
-run_query_art_count = (client, element) ->
+run_query_art_count_oldbar = (client, element) ->
 	k_query = build_query()
 	k_query['eventCollection'] = 'artSeen'
 	if $('#group_chart01').attr 'data-grouped'
@@ -293,6 +294,35 @@ run_query_art_count = (client, element) ->
 			remove_empty_data element
 
 			drawBar element, false
+		return
+
+	return
+
+run_query_art_count = (client, element) ->
+	k_query1 = build_query()
+	k_query2 = build_query()
+	k_query1['eventCollection'] = 'artSeen'
+	k_query2['eventCollection'] = 'artSeen'
+
+	query_art_count1 = new (Keen.Query)('count', no_tests(k_query1))
+	query_art_count2 = new (Keen.Query)('count', test_doest_exist(k_query2))
+
+	#clocky thingy
+	$(element).append '<div class="loady"><div class="arc1"></div></div>'
+
+	client.run [query_art_count1, query_art_count2], (err, res) ->
+		if err
+		else
+			#console.log res
+
+			dataset = {total: 0, title: 'Total Pictures Unfolded Count'}
+
+			i=0
+			while i < res.length
+				dataset['total'] += res[i]['result']
+				i++
+
+			drawTotalBlock element, dataset
 		return
 
 	return
@@ -487,7 +517,7 @@ run_query_art_daily_count = (client, element) ->
 			all_json[element].data.linesDataset.push {value: '2015-05-11', text: 'Start FB Ads'} #13:17
 			all_json[element].data.linesDataset.push {value: '2014-10-22', text: 'v2.4.1'}
 			#all_json[element].data.linesDataset.push {value: '2014-10-22', text: 'v2.4.0'} Negiglible...
-			#all_json[element].data.linesDataset.push {value: '2014-10-21', text: 'v2.3.5'} #Mess up fixed day after
+			#all_json[element].data.linesDataset.push {value: '2014-10-21', text: 'v2.3.5'} Mess up fixed day after
 			all_json[element].data.linesDataset.push {value: '2014-09-14', text: 'v2.3.1'}
 			#all_json[element].data.linesDataset.push {value: '2014-09-14', text: 'v2.3.0'} Negiglible...
 			all_json[element].data.linesDataset.push {value: '2014-07-24', text: 'v2.1.1'}
@@ -809,7 +839,7 @@ draw1LineGraph = (element, stacked, resize) ->
 		chart_lines.push {value: all_json[element]['data']['linesDataset'][i]['value'], text: all_json[element]['data']['linesDataset'][i]['text']}
 		i++
 
-	console.log chart_lines
+	#console.log chart_lines
 
 	chartLine = c3.generate({
 		axis: {
@@ -880,6 +910,14 @@ drawPieGraph = (element, dataset) ->
 					value: (value, ratio, id) ->
 						return value + ' - ' + Math.floor(ratio*100) + '%'
 		})
+
+	return
+
+drawTotalBlock = (element, dataset) ->
+	$(element + ' > div.loady').remove()
+
+	$(element + ' > div > span.chart-count').html(dataset['total']);
+	$(element + ' > div > span.chart-title').html(dataset['title']);
 
 	return
 
