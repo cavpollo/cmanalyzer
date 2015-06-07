@@ -4,6 +4,7 @@
 
 all_json = {}
 chartPie = {}
+chartBar = {}
 chartLine = {}
 #hooverText = {}
 startDate = moment().subtract(6, 'days')
@@ -100,59 +101,44 @@ ready = ->
 #			$(this).prop 'data-grouped', true
 #		return
 
-	$('#group_chart01').click ->
-		run_query_art_count_oldbar client, '#chart01'
+	$('.chart01').click ->
+		if $('#chart01').attr('data-grouped') != $(this).attr('data-group')
+			$('.chart01').addClass('btn-default').removeClass('btn-success')
+			$(this).addClass('btn-success').removeClass('btn-default')
+			$('#chart01').attr('data-grouped', $(this).attr('data-group'))
+			run_query_art_group_count client, '#chart01', drawBarGraph
+		return
 
 	$('#stack_chart02').click ->
-		if $(this).attr 'data-stacked'
-			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-stacked')
-			stacked = false
+		if $('#chart02').attr 'data-stacked'
+			$(this).addClass('btn-default').removeClass('btn-success')
+			$('#chart02').removeAttr('data-stacked')
 		else
-			$(this).removeClass('btn-default').addClass('btn-success').attr('data-stacked', 'true')
+			$(this).removeClass('btn-default').addClass('btn-success')
+			$('#chart02').attr('data-stacked', 'true')
 			stacked = true
-		draw1LineGraph '#chart02', stacked, false
+		draw1LineGraph '#chart02', false
 		return
 
-	$('#groupP_chart02').click ->
-		if $(this).attr 'data-grouped'
-			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-			$('#stack_chart02').addClass('disabled').addClass('btn-default').removeClass('btn-success').removeAttr('data-stacked')
+	$('.chart02').click ->
+		if $('#chart02').attr('data-grouped') == $(this).attr('data-group')
+			$(this).addClass('btn-default').removeClass('btn-success')
+			$('#chart02').removeAttr('data-grouped').removeAttr('data-stacked')
+			$('#stack_chart02').addClass('disabled').addClass('btn-default').removeClass('btn-success')
 		else
-			$('#groupV_chart02').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'picName')
+			$('.chart02').addClass('btn-default').removeClass('btn-success')
+			$(this).addClass('btn-success').removeClass('btn-default')
+			$('#chart02').attr('data-grouped', $(this).attr('data-group'))
 			$('#stack_chart02').removeClass('disabled')
 		run_query_art_daily_count client, '#chart02'
 		return
 
-	$('#groupV_chart02').click ->
-		if $(this).attr 'data-grouped'
-			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-			$('#stack_chart02').addClass('disabled').addClass('btn-default').removeClass('btn-success').removeAttr('data-stacked')
-		else
-			$('#groupP_chart02').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'version')
-			$('#stack_chart02').removeClass('disabled')
-		run_query_art_daily_count client, '#chart02'
-		return
-
-	$('#groupP_chart03').click ->
-		if $(this).prop 'data-grouped'
-			$('#groupV_chart03').removeClass('btn-default').addClass('btn-success').attr('data-grouped')
-			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-		else
-			$('#groupV_chart03').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'picName')
-		run_query_art_group_count client, '#chart03'
-		return
-
-	$('#groupV_chart03').click ->
-		if $(this).prop 'data-grouped'
-			$('#groupP_chart03').removeClass('btn-default').addClass('btn-success').attr('data-grouped')
-			$(this).addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-		else
-			$('#groupP_chart03').addClass('btn-default').removeClass('btn-success').removeAttr('data-grouped')
-			$(this).addClass('btn-success').removeClass('btn-default').attr('data-grouped', 'version')
-		run_query_art_group_count client, '#chart03'
+	$('.chart03').click ->
+		if $('#chart03').attr('data-grouped') != $(this).attr('data-group')
+			$('.chart03').addClass('btn-default').removeClass('btn-success')
+			$(this).addClass('btn-success').removeClass('btn-default')
+			$('#chart03').attr('data-grouped', $(this).attr('data-group'))
+			run_query_art_group_count client, '#chart03', drawPieGraph
 		return
 		
 	return
@@ -162,8 +148,9 @@ $(document).on 'page:load', ready
 
 query_and_draw = (client) ->
 	run_query_art_count client, '#chart04'
-	run_query_art_count_oldbar client, '#chart01'
-	run_query_art_group_count client, '#chart03'
+#	run_query_art_count_oldbar client, '#chart01'
+	run_query_art_group_count client, '#chart01', drawBarGraph
+	run_query_art_group_count client, '#chart03', drawPieGraph
 	run_query_art_daily_count client, '#chart02'
 
 refresh_graphs = ->
@@ -171,60 +158,60 @@ refresh_graphs = ->
 		drawBar '#chart01', true
 	return
 
-init_or_switch_data = (element) ->
-	if all_json[element] == undefined
-		all_json[element] = {data: {}}
-	else
-		i = 0
-		while i < Object.keys(all_json[element]['data']).length
-			name = Object.keys(all_json[element]['data'])[i]
-			all_json[element]['data'][name] =
-				{old: all_json[element]['data'][name]['new']
-				new: null}
-			i++
-
-	#console.log all_json[element]
-	return
-
-fill_in_new_data_simple = (res, element) ->
-	if all_json[element]['data']['Total'] == undefined
-		all_json[element]['data']['Total'] = {}
-		all_json[element]['data']['Total']['old'] = 0
-	all_json[element]['data']['Total']['new'] = res.result
-
-	#console.log all_json[element]
-	return
-
-fill_in_new_data_grouped = (res, element, name_getter, value_getter) ->
-	i = 0
-	while i < res.result.length
-		name = (name_getter res.result[i]) #.replace /[^A-Za-z0-9]/g, ''
-		if all_json[element]['data'][name] == undefined
-			all_json[element]['data'][name] = {}
-			all_json[element]['data'][name]['old'] = 0
-		all_json[element]['data'][name]['new'] = value_getter res.result[i]
-		i++
-
-	#console.log all_json[element]
-	return
-
-remove_empty_data = (element) ->
-	i = 0
-	while i < Object.keys(all_json[element]['data']).length
-		name = Object.keys(all_json[element]['data'])[i]
-		if all_json[element]['data'][name]['old'] == 0 && all_json[element]['data'][name]['new'] == undefined
-			all_json[element]['data'].splice i, 1
-		else
-			i++
-
-	#console.log all_json[element]
-	return
-
-get_pic_name = (value) ->
-	return value['picName']
-
-get_pic_value = (value) ->
-	return value['result']
+#init_or_switch_data = (element) ->
+#	if all_json[element] == undefined
+#		all_json[element] = {data: {}}
+#	else
+#		i = 0
+#		while i < Object.keys(all_json[element]['data']).length
+#			name = Object.keys(all_json[element]['data'])[i]
+#			all_json[element]['data'][name] =
+#				{old: all_json[element]['data'][name]['new']
+#				new: null}
+#			i++
+#
+#	#console.log all_json[element]
+#	return
+#
+#fill_in_new_data_simple = (res, element) ->
+#	if all_json[element]['data']['Total'] == undefined
+#		all_json[element]['data']['Total'] = {}
+#		all_json[element]['data']['Total']['old'] = 0
+#	all_json[element]['data']['Total']['new'] = res.result
+#
+#	#console.log all_json[element]
+#	return
+#
+#fill_in_new_data_grouped = (res, element, name_getter, value_getter) ->
+#	i = 0
+#	while i < res.result.length
+#		name = (name_getter res.result[i]) #.replace /[^A-Za-z0-9]/g, ''
+#		if all_json[element]['data'][name] == undefined
+#			all_json[element]['data'][name] = {}
+#			all_json[element]['data'][name]['old'] = 0
+#		all_json[element]['data'][name]['new'] = value_getter res.result[i]
+#		i++
+#
+#	#console.log all_json[element]
+#	return
+#
+#remove_empty_data = (element) ->
+#	i = 0
+#	while i < Object.keys(all_json[element]['data']).length
+#		name = Object.keys(all_json[element]['data'])[i]
+#		if all_json[element]['data'][name]['old'] == 0 && all_json[element]['data'][name]['new'] == undefined
+#			all_json[element]['data'].splice i, 1
+#		else
+#			i++
+#
+#	#console.log all_json[element]
+#	return
+#
+#get_pic_name = (value) ->
+#	return value['picName']
+#
+#get_pic_value = (value) ->
+#	return value['result']
 
 build_query = ->
 	the_query = {}
@@ -265,38 +252,38 @@ test_doest_exist = (qq) ->
 		property_value: false}
 	return the_q
 
-run_query_art_count_oldbar = (client, element) ->
-	k_query = build_query()
-	k_query['eventCollection'] = 'artSeen'
-	if $('#group_chart01').attr 'data-grouped'
-		k_query['groupBy'] = 'picName'
-
-	#	the_query['filters'].push {
-	#		property_name: 'test'
-	#		operator: 'eq'
-	#		property_value: false}
-
-	query_art_count = new (Keen.Query)('count', k_query)
-
-	#clocky thingy
-	$(element).append '<div class="loady"><div class="arc1"></div></div>'
-
-	client.run query_art_count, (err, res) ->
-		if err
-		else
-			init_or_switch_data element
-
-			if $('#group_chart01').attr 'data-grouped'
-				fill_in_new_data_grouped res, element, get_pic_name, get_pic_value
-			else
-				fill_in_new_data_simple res, element
-
-			remove_empty_data element
-
-			drawBar element, false
-		return
-
-	return
+#run_query_art_count_oldbar = (client, element) ->
+#	k_query = build_query()
+#	k_query['eventCollection'] = 'artSeen'
+#	if $('#group_chart01').attr 'data-grouped'
+#		k_query['groupBy'] = 'picName'
+#
+#	#	the_query['filters'].push {
+#	#		property_name: 'test'
+#	#		operator: 'eq'
+#	#		property_value: false}
+#
+#	query_art_count = new (Keen.Query)('count', k_query)
+#
+#	#clocky thingy
+#	$(element).append '<div class="loady"><div class="arc1"></div></div>'
+#
+#	client.run query_art_count, (err, res) ->
+#		if err
+#		else
+#			init_or_switch_data element
+#
+#			if $('#group_chart01').attr 'data-grouped'
+#				fill_in_new_data_grouped res, element, get_pic_name, get_pic_value
+#			else
+#				fill_in_new_data_simple res, element
+#
+#			remove_empty_data element
+#
+#			drawBar element, false
+#		return
+#
+#	return
 
 run_query_art_count = (client, element) ->
 	k_query1 = build_query()
@@ -327,20 +314,16 @@ run_query_art_count = (client, element) ->
 
 	return
 
-run_query_art_group_count = (client, element) ->
+run_query_art_group_count = (client, element, drawAsGraph) ->
 	k_query1 = build_query()
 	k_query2 = build_query()
 	k_query1['eventCollection'] = 'artSeen'
 	k_query2['eventCollection'] = 'artSeen'
 	group = ''
-	if $('#groupP_chart03').attr 'data-grouped'
-		k_query1['groupBy'] = 'picName'
-		k_query2['groupBy'] = 'picName'
-		group = 'picName'
-	if $('#groupV_chart03').attr 'data-grouped'
-		k_query1['groupBy'] = 'version'
-		k_query2['groupBy'] = 'version'
-		group = 'version'
+	if $(element).attr 'data-grouped'
+		k_query1['groupBy'] = $(element).attr 'data-grouped'
+		k_query2['groupBy'] = $(element).attr 'data-grouped'
+		group = $(element).attr 'data-grouped'
 
 	query_art_count1 = new (Keen.Query)('count', no_tests(k_query1))
 	query_art_count2 = new (Keen.Query)('count', test_doest_exist(k_query2))
@@ -389,7 +372,7 @@ run_query_art_group_count = (client, element) ->
 				dataset[i].push quack[i].result
 				i++
 
-			drawPieGraph element, dataset
+			drawAsGraph element, dataset
 		return
 
 	return
@@ -400,17 +383,11 @@ run_query_art_daily_count = (client, element) ->
 	k_query1['eventCollection'] = 'artSeen'
 	k_query2['eventCollection'] = 'artSeen'
 	group = ''
-	stack = false
-	if $('#stack_chart02').attr 'data-stacked'
-		stack = true
-	if $('#groupP_chart02').attr 'data-grouped'
-		k_query1['groupBy'] = 'picName'
-		k_query2['groupBy'] = 'picName'
-		group = 'picName'
-	if $('#groupV_chart02').attr 'data-grouped'
-		k_query1['groupBy'] = 'version'
-		k_query2['groupBy'] = 'version'
-		group = 'version'
+	if $(element).attr 'data-grouped'
+		k_query1['groupBy'] = $(element).attr 'data-grouped'
+		k_query2['groupBy'] = $(element).attr 'data-grouped'
+		group = $(element).attr 'data-grouped'
+
 	k_query1['interval'] = 'daily'
 	k_query2['interval'] = 'daily'
 
@@ -527,292 +504,13 @@ run_query_art_daily_count = (client, element) ->
 
 			#console.log all_json[element].data
 
-			draw1LineGraph element, stack, false
+			draw1LineGraph element, false
 		return
 
 	return
 
-drawBar = (element, resize) ->
+draw1LineGraph = (element, resize) ->
 	$(element).html('');
-	dataset = $.map all_json[element]['data'], (value, index) ->
-		thing = value
-		thing['name'] = index
-		return [thing];
-#	console.log dataset
-
-	axis_XOffset = 50
-	axis_YOffset = 6
-	text_YOffset = 30
-	text_H = 25
-	graph_H = $(element).height() - (axis_YOffset + text_H + text_YOffset)
-	graph_W = $(element).width() - (axis_XOffset)
-	graph_Offset = graph_W * 10 / 100
-
-	dataset.sort (a, b) ->
-		if (a.name > b.name)
-			return 1;
-		if (a.name < b.name)
-			return -1;
-		return 0
-
-	i = 0
-	total = 0
-	old_max = 0
-	new_max = 0
-	old_length = 0
-	new_length = 0
-	while i < dataset.length
-		total += dataset[i].new
-		if dataset[i].new > new_max
-			new_max = dataset[i].new
-		if dataset[i].old > old_max
-			old_max = dataset[i].old
-		if dataset[i].old > 0
-			old_length++
-		if dataset[i].new > 0
-			new_length++
-		i++
-
-	if new_length <= 1
-		allbars_W = graph_W
-	else
-		allbars_W = (graph_W - graph_Offset)
-
-	if old_length == 0
-		old_length = new_length
-		
-	if svgChart
-		svgChart.remove()
-
-	svgChart = d3.select(element)
-	.append 'svg'
-	.attr 'width', $(element).width()
-	.attr 'height', $(element).height()
-
-	#XSCALE
-	scaleX = []
-	scaleXNames = []
-
-	if new_length == 0
-		scaleX.push 0
-		scaleX.push graph_W
-		scaleXNames.push 'No Results'
-		axis_width = graph_W
-	else
-		if new_length == 1
-			the_v = 0
-		else
-			the_v = graph_Offset / (new_length - 1)
-
-		c = 0
-		i = 0
-		pending = false
-		while c < dataset.length
-			if pending
-				scaleX.push ((allbars_W/new_length) * i)
-				scaleXNames.push 'xxx'+i
-				pending = false
-			if dataset[c].new != null
-				scaleX.push (( (allbars_W/new_length) + the_v) * i)
-				scaleXNames.push '(' + dataset[c].new + ') ' + dataset[c].name
-				pending = true
-				i++
-			c++
-
-		scaleX.push graph_W
-		axis_width = allbars_W/new_length
-
-#	console.log scaleX
-#	console.log scaleXNames
-
-	scaleXCount = d3.scale.ordinal()
-	.range scaleX
-	.domain scaleXNames
-
-	xAxis = d3.svg.axis()
-	.scale scaleXCount
-	.orient "bottom"
-
-	svgChart.append("g")
-	.attr "class", "xaxis"
-	.attr "transform", "translate("+axis_XOffset+"," + (axis_YOffset+graph_H+1) + ")"
-	.call xAxis
-	.selectAll ".tick text"
-	.call wrap, axis_width
-
-	#Y SCALE
-	scaleYCount = d3.scale.linear()
-	.domain [0, new_max]
-	.range [graph_H, 0]
-
-	yAxisTicks = d3.svg.axis()
-	.scale scaleYCount
-	.orient "left"
-	.ticks 5
-
-	svgChart.append("g")
-	.attr "class", "yaxis"
-	.attr "transform", "translate("+(axis_XOffset-1)+","+axis_YOffset+")"
-	.call yAxisTicks
-
-	rect = svgChart.selectAll 'rect'
-	.data dataset
-	.enter()
-	.append 'rect'
-
-	hoover_ready = resize
-	rect.on 'mouseover', (d, i) ->
-		if hoover_ready
-#			hooverText = svgChart.append 'text'
-#			.text d.name + ' = ' + d.new
-#			.attr 'text-anchor', 'middle'
-#			.attr 'x', $(element).width()/2
-#			.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
-#			.attr 'font-family', 'sans-serif'
-#			.attr 'font-size', text_H + 'px'
-
-			d3.select this
-			.transition()
-			.duration 250
-			.attr 'fill', ->
-				if new_length <= 0
-					v = 'rgb(165, 42, 42)'
-				else
-					j = 0
-					c = 0
-					while c < i
-						if dataset[c].new > 0
-							j++
-						c++
-					v = d3.rgb(165,42,42).darker(3*((new_length-j)/new_length))
-				return v
-		return
-	.on 'mouseout', (d, i) ->
-		if hoover_ready
-			d3.select this
-			.transition()
-			.duration 350
-			.attr 'fill', ->
-				if new_length <= 0
-					v = 'rgb(70,130,180)'
-				else
-					j = 0
-					c = 0
-					while c < i
-						if dataset[c].new > 0
-							j++
-						c++
-					v = d3.rgb(70,130,180).darker(3*(j/new_length))
-				return v
-#			hooverText.remove()
-		return
-
-	if !resize
-		rect_animated = rect.transition()
-		.duration 1000
-		.each 'start', (d, i) ->
-			hoover_ready = false
-			d3.select this
-			.attr 'x', ->
-				if old_length <= 1
-					v = 0
-				else
-					j = 0
-					c = 0
-					while c < i
-						if dataset[c].old > 0
-							j++
-						c++
-
-					v = (allbars_W/old_length + graph_Offset / (old_length - 1))*j
-
-				return v + axis_XOffset
-			.attr 'y', ->
-				if old_max == 0
-					old_h_ratio = 0
-				else
-					old_h_ratio = d.old / old_max
-				return graph_H - (old_h_ratio * graph_H) + axis_YOffset
-			.attr 'width', ->
-				if old_length <= 0
-					v = 0
-				else
-					v = allbars_W/old_length
-				return v
-			.attr 'height', ->
-				if old_max == 0
-					old_h_ratio = 0
-				else
-					old_h_ratio = d.old / old_max
-				return old_h_ratio * graph_H
-			.attr 'fill', ->
-				if old_length <= 1
-					v = 'rgb(70,130,180)'
-				else
-					j = 0
-					c = 0
-					while c < i
-						if dataset[c].old > 0
-							j++
-						c++
-					v = d3.rgb(70,130,180).darker(3*(j/old_length))
-				return v
-			return
-		.each "end", ->
-			hoover_ready = true
-			return
-	else
-		rect_animated = rect
-
-	rect_animated.attr 'x', (d, i) ->
-		if new_length <= 1
-			v = 0
-		else
-			j = 0
-			c = 0
-			while c < i
-				if dataset[c].new > 0
-					j++
-				c++
-			v = (allbars_W/new_length + graph_Offset / (new_length - 1))*j
-		return v + axis_XOffset
-	.attr 'y', (d) ->
-		if new_max == 0
-			new_h_ratio = 0
-		else
-			new_h_ratio = d.new / new_max
-		return graph_H - (new_h_ratio * graph_H) + axis_YOffset
-	.attr 'width', (d) ->
-		if new_length <= 0
-			v = 0
-		else
-			v = allbars_W/new_length
-		return v
-	.attr 'height', (d) ->
-		if new_max == 0
-			new_h_ratio = 0
-		else
-			new_h_ratio = d.new / new_max
-		return new_h_ratio * graph_H
-	.attr 'fill', (d, i) ->
-		if new_length <= 1
-			v = 'rgb(70,130,180)'
-		else
-			j = 0
-			c = 0
-			while c < i
-				if dataset[c].new > 0
-					j++
-				c++
-			v = d3.rgb(70,130,180).darker(3*(j/new_length))
-		return v
-	return
-
-draw1LineGraph = (element, stacked, resize) ->
-	$(element).html('');
-
-#	if chartLine
-#		chartLine.remove()
 
 	chartColumns = []
 	chartColumns.push all_json[element]['data']['xDataset']
@@ -830,7 +528,7 @@ draw1LineGraph = (element, stacked, resize) ->
 		columns: chartColumns
 		types: chartTypes
 	}
-	if stacked
+	if $(element).attr('data-stacked')
 		chart_data['groups'] = [chartGroups]
 
 	i=0
@@ -870,6 +568,68 @@ draw1LineGraph = (element, stacked, resize) ->
 			width: $(element).width()
 		}
 	})
+
+	return
+
+drawBarGraph = (element, dataset) ->
+	$(element + ' > div.loady').remove()
+
+	chartColumns = []
+	chartColumnData = []
+	chartColumnNames = []
+
+	chartColumnNames.push 'x'
+	chartColumnData.push 'data'
+
+	i = 0
+	while i < dataset.length
+		chartColumnNames.push dataset[i][0]
+		chartColumnData.push dataset[i][1]
+		i++
+
+	chartColumns.push chartColumnNames
+	chartColumns.push chartColumnData
+
+	if chartBar[element]
+		unload_array = $.map chartBar[element].data(), (value, index) ->
+			return value.id
+		chartBar[element].load({
+			columns: chartColumns
+			unload: unload_array
+		})
+	else
+		chartBar[element] = c3.generate({
+			axis: {
+				x: {
+					type: 'category'
+				}
+			}
+			bar: {
+				width: {
+					ratio: 0.95
+				}
+			}
+			bindto: element
+			data: {
+				x: 'x'
+				columns: chartColumns
+				groups: [['data']]
+				type: 'bar'
+			}
+			legend: {
+				position: 'right'
+			}
+			size: {
+				height: $(element).height()
+				width: $(element).width()
+			}
+#			tooltip:
+#				format:
+#					title: (d) ->
+#						return d
+#					value: (value, ratio, id) ->
+#						return value + ' - ' + Math.floor(ratio*100) + '%'
+		})
 
 	return
 
@@ -921,35 +681,311 @@ drawTotalBlock = (element, dataset) ->
 
 	return
 
-wrap = (texty, width) ->
-	texty.each ->
-		text = d3.select(this)
-		if text.text().match(/xxx\d+/g) == null
-			words = text.text().split(/\s+/).reverse()
-			word = undefined
-			line = []
-			lineNumber = 0
-			lineHeight = 1.1
-			y = text.attr('y')
-			dy = parseFloat(text.attr('dy'))
-			tspan = text.text(null).append('tspan').attr('x', width/2).attr('y', y).attr('dy', dy + 'em')
-			while word = words.pop()
-				line.push word
-				tspan.text line.join(' ')
-				#				console.log '------------'
-				#				console.log tspan.text()
-				#				console.log line
-				#				console.log words
-				if tspan.node().getComputedTextLength() > width
-					if line.length == 1
-						temp = line.pop()
-						words.push temp.substr(0, temp.length-2).concat('.')
-					else
-						words.push line.pop()
-						tspan.text line.join(' ')
-						line = []
-						tspan = text.append('tspan').attr('x', width/2).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(null)
-		else
-			text.remove()
-		return
-	return
+#drawBar = (element, resize) ->
+#	$(element).html('');
+#	dataset = $.map all_json[element]['data'], (value, index) ->
+#		thing = value
+#		thing['name'] = index
+#		return [thing];
+#	#	console.log dataset
+#
+#	axis_XOffset = 50
+#	axis_YOffset = 6
+#	text_YOffset = 30
+#	text_H = 25
+#	graph_H = $(element).height() - (axis_YOffset + text_H + text_YOffset)
+#	graph_W = $(element).width() - (axis_XOffset)
+#	graph_Offset = graph_W * 10 / 100
+#
+#	dataset.sort (a, b) ->
+#		if (a.name > b.name)
+#			return 1;
+#		if (a.name < b.name)
+#			return -1;
+#		return 0
+#
+#	i = 0
+#	total = 0
+#	old_max = 0
+#	new_max = 0
+#	old_length = 0
+#	new_length = 0
+#	while i < dataset.length
+#		total += dataset[i].new
+#		if dataset[i].new > new_max
+#			new_max = dataset[i].new
+#		if dataset[i].old > old_max
+#			old_max = dataset[i].old
+#		if dataset[i].old > 0
+#			old_length++
+#		if dataset[i].new > 0
+#			new_length++
+#		i++
+#
+#	if new_length <= 1
+#		allbars_W = graph_W
+#	else
+#		allbars_W = (graph_W - graph_Offset)
+#
+#	if old_length == 0
+#		old_length = new_length
+#
+#	if svgChart
+#		svgChart.remove()
+#
+#	svgChart = d3.select(element)
+#	.append 'svg'
+#	.attr 'width', $(element).width()
+#	.attr 'height', $(element).height()
+#
+#	#XSCALE
+#	scaleX = []
+#	scaleXNames = []
+#
+#	if new_length == 0
+#		scaleX.push 0
+#		scaleX.push graph_W
+#		scaleXNames.push 'No Results'
+#		axis_width = graph_W
+#	else
+#		if new_length == 1
+#			the_v = 0
+#		else
+#			the_v = graph_Offset / (new_length - 1)
+#
+#		c = 0
+#		i = 0
+#		pending = false
+#		while c < dataset.length
+#			if pending
+#				scaleX.push ((allbars_W/new_length) * i)
+#				scaleXNames.push 'xxx'+i
+#				pending = false
+#			if dataset[c].new != null
+#				scaleX.push (( (allbars_W/new_length) + the_v) * i)
+#				scaleXNames.push '(' + dataset[c].new + ') ' + dataset[c].name
+#				pending = true
+#				i++
+#			c++
+#
+#		scaleX.push graph_W
+#		axis_width = allbars_W/new_length
+#
+#	#	console.log scaleX
+#	#	console.log scaleXNames
+#
+#	scaleXCount = d3.scale.ordinal()
+#	.range scaleX
+#	.domain scaleXNames
+#
+#	xAxis = d3.svg.axis()
+#	.scale scaleXCount
+#	.orient "bottom"
+#
+#	svgChart.append("g")
+#	.attr "class", "xaxis"
+#	.attr "transform", "translate("+axis_XOffset+"," + (axis_YOffset+graph_H+1) + ")"
+#	.call xAxis
+#	.selectAll ".tick text"
+#	.call wrap, axis_width
+#
+#	#Y SCALE
+#	scaleYCount = d3.scale.linear()
+#	.domain [0, new_max]
+#	.range [graph_H, 0]
+#
+#	yAxisTicks = d3.svg.axis()
+#	.scale scaleYCount
+#	.orient "left"
+#	.ticks 5
+#
+#	svgChart.append("g")
+#	.attr "class", "yaxis"
+#	.attr "transform", "translate("+(axis_XOffset-1)+","+axis_YOffset+")"
+#	.call yAxisTicks
+#
+#	rect = svgChart.selectAll 'rect'
+#	.data dataset
+#	.enter()
+#	.append 'rect'
+#
+#	hoover_ready = resize
+#	rect.on 'mouseover', (d, i) ->
+#		if hoover_ready
+##			hooverText = svgChart.append 'text'
+##			.text d.name + ' = ' + d.new
+##			.attr 'text-anchor', 'middle'
+##			.attr 'x', $(element).width()/2
+##			.attr 'y', (axis_YOffset + graph_H + text_YOffset + text_H)
+##			.attr 'font-family', 'sans-serif'
+##			.attr 'font-size', text_H + 'px'
+#
+#			d3.select this
+#			.transition()
+#			.duration 250
+#			.attr 'fill', ->
+#				if new_length <= 0
+#					v = 'rgb(165, 42, 42)'
+#				else
+#					j = 0
+#					c = 0
+#					while c < i
+#						if dataset[c].new > 0
+#							j++
+#						c++
+#					v = d3.rgb(165,42,42).darker(3*((new_length-j)/new_length))
+#				return v
+#		return
+#	.on 'mouseout', (d, i) ->
+#		if hoover_ready
+#			d3.select this
+#			.transition()
+#			.duration 350
+#			.attr 'fill', ->
+#				if new_length <= 0
+#					v = 'rgb(70,130,180)'
+#				else
+#					j = 0
+#					c = 0
+#					while c < i
+#						if dataset[c].new > 0
+#							j++
+#						c++
+#					v = d3.rgb(70,130,180).darker(3*(j/new_length))
+#				return v
+#		#			hooverText.remove()
+#		return
+#
+#	if !resize
+#		rect_animated = rect.transition()
+#		.duration 1000
+#		.each 'start', (d, i) ->
+#			hoover_ready = false
+#			d3.select this
+#			.attr 'x', ->
+#				if old_length <= 1
+#					v = 0
+#				else
+#					j = 0
+#					c = 0
+#					while c < i
+#						if dataset[c].old > 0
+#							j++
+#						c++
+#
+#					v = (allbars_W/old_length + graph_Offset / (old_length - 1))*j
+#
+#				return v + axis_XOffset
+#			.attr 'y', ->
+#				if old_max == 0
+#					old_h_ratio = 0
+#				else
+#					old_h_ratio = d.old / old_max
+#				return graph_H - (old_h_ratio * graph_H) + axis_YOffset
+#			.attr 'width', ->
+#				if old_length <= 0
+#					v = 0
+#				else
+#					v = allbars_W/old_length
+#				return v
+#			.attr 'height', ->
+#				if old_max == 0
+#					old_h_ratio = 0
+#				else
+#					old_h_ratio = d.old / old_max
+#				return old_h_ratio * graph_H
+#			.attr 'fill', ->
+#				if old_length <= 1
+#					v = 'rgb(70,130,180)'
+#				else
+#					j = 0
+#					c = 0
+#					while c < i
+#						if dataset[c].old > 0
+#							j++
+#						c++
+#					v = d3.rgb(70,130,180).darker(3*(j/old_length))
+#				return v
+#			return
+#		.each "end", ->
+#			hoover_ready = true
+#			return
+#	else
+#		rect_animated = rect
+#
+#	rect_animated.attr 'x', (d, i) ->
+#		if new_length <= 1
+#			v = 0
+#		else
+#			j = 0
+#			c = 0
+#			while c < i
+#				if dataset[c].new > 0
+#					j++
+#				c++
+#			v = (allbars_W/new_length + graph_Offset / (new_length - 1))*j
+#		return v + axis_XOffset
+#	.attr 'y', (d) ->
+#		if new_max == 0
+#			new_h_ratio = 0
+#		else
+#			new_h_ratio = d.new / new_max
+#		return graph_H - (new_h_ratio * graph_H) + axis_YOffset
+#	.attr 'width', (d) ->
+#		if new_length <= 0
+#			v = 0
+#		else
+#			v = allbars_W/new_length
+#		return v
+#	.attr 'height', (d) ->
+#		if new_max == 0
+#			new_h_ratio = 0
+#		else
+#			new_h_ratio = d.new / new_max
+#		return new_h_ratio * graph_H
+#	.attr 'fill', (d, i) ->
+#		if new_length <= 1
+#			v = 'rgb(70,130,180)'
+#		else
+#			j = 0
+#			c = 0
+#			while c < i
+#				if dataset[c].new > 0
+#					j++
+#				c++
+#			v = d3.rgb(70,130,180).darker(3*(j/new_length))
+#		return v
+#	return
+
+#wrap = (texty, width) ->
+#	texty.each ->
+#		text = d3.select(this)
+#		if text.text().match(/xxx\d+/g) == null
+#			words = text.text().split(/\s+/).reverse()
+#			word = undefined
+#			line = []
+#			lineNumber = 0
+#			lineHeight = 1.1
+#			y = text.attr('y')
+#			dy = parseFloat(text.attr('dy'))
+#			tspan = text.text(null).append('tspan').attr('x', width/2).attr('y', y).attr('dy', dy + 'em')
+#			while word = words.pop()
+#				line.push word
+#				tspan.text line.join(' ')
+#				#				console.log '------------'
+#				#				console.log tspan.text()
+#				#				console.log line
+#				#				console.log words
+#				if tspan.node().getComputedTextLength() > width
+#					if line.length == 1
+#						temp = line.pop()
+#						words.push temp.substr(0, temp.length-2).concat('.')
+#					else
+#						words.push line.pop()
+#						tspan.text line.join(' ')
+#						line = []
+#						tspan = text.append('tspan').attr('x', width/2).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(null)
+#		else
+#			text.remove()
+#		return
+#	return
