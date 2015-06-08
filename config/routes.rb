@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   get 'webstats' => 'webstats#index'
   get 'webstats/art' => 'webstats#art'
   get 'webstats/modes' => 'webstats#modes'
+  get 'webstats/screen' => 'webstats#screen'
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

@@ -1,3 +1,5 @@
+client = null
+eventCollection = ''
 startDate = moment().subtract(6, 'days')
 endDate = moment().add(1, 'days')
 
@@ -12,7 +14,12 @@ ready = ->
 	d3.select(window).on('resize', refresh_graphs)
 
 	if $('body.webstats.art').length
-		query_and_draw client
+		eventCollection = 'artSeen'
+
+	if $('body.webstats.screen').length
+		eventCollection = 'enterScreen'
+
+	query_and_draw()
 
 #/---------------------------------------\
 #|               Filters                 |
@@ -65,22 +72,22 @@ ready = ->
 		startDate = picker.startDate
 		endDate = picker.endDate.add(1, 'days')
 
-		query_and_draw client
+		query_and_draw()
 		return
 
 	$('#version').change ->
-		query_and_draw client
+		query_and_draw()
 
 	$('.data-version').click ->
 		$(this).toggleClass 'btn-default'
 		$(this).toggleClass 'btn-success'
 
-		if $(this).prop 'dataFilter'
-			$(this).prop 'dataFilter', false
+		if $(this).attr 'data-filter'
+			$(this).removeAttr 'data-filter'
 		else
-			$(this).prop 'dataFilter', true
+			$(this).attr 'data-filter', 'true'
 
-		query_and_draw client
+		query_and_draw()
 		return
 
 	$('.chart01').click ->
@@ -88,7 +95,7 @@ ready = ->
 			$('.chart01').addClass('btn-default').removeClass('btn-success')
 			$(this).addClass('btn-success').removeClass('btn-default')
 			$('#chart01').attr('data-grouped', $(this).attr('data-group'))
-			run_query_art_group_count client, '#chart01', drawBarGraph
+			run_query_group_count '#chart01', drawBarGraph
 		return
 
 	$('#stack_chart02').click ->
@@ -98,7 +105,7 @@ ready = ->
 		else
 			$(this).removeClass('btn-default').addClass('btn-success')
 			$('#chart02').attr('data-stacked', 'true')
-		run_query_art_daily_group_count client, '#chart02'
+		run_query_daily_group_count '#chart02'
 		return
 
 	$('.chart02').click ->
@@ -111,7 +118,7 @@ ready = ->
 			$(this).addClass('btn-success').removeClass('btn-default')
 			$('#chart02').attr('data-grouped', $(this).attr('data-group'))
 			$('#stack_chart02').removeClass('disabled')
-		run_query_art_daily_group_count client, '#chart02'
+		run_query_daily_group_count '#chart02'
 		return
 
 	$('.chart03').click ->
@@ -119,7 +126,7 @@ ready = ->
 			$('.chart03').addClass('btn-default').removeClass('btn-success')
 			$(this).addClass('btn-success').removeClass('btn-default')
 			$('#chart03').attr('data-grouped', $(this).attr('data-group'))
-			run_query_art_group_count client, '#chart03', drawPieGraph
+			run_query_group_count '#chart03', drawPieGraph
 		return
 		
 	return
@@ -131,11 +138,17 @@ ready = ->
 $(document).ready ready
 $(document).on 'page:load', ready
 
-query_and_draw = (client) ->
-	run_query_art_count client, '#chart04'
-	run_query_art_group_count client, '#chart01', drawBarGraph
-	run_query_art_group_count client, '#chart03', drawPieGraph
-	run_query_art_daily_group_count client, '#chart02'
+query_and_draw = ->
+	if $('body.webstats.art').length
+		chart_title = 'Total Pictures Unfolded Count'
+
+	if $('body.webstats.screen').length
+		chart_title = 'Total Screens Visited Count'
+
+	run_query_count '#chart04', chart_title
+	run_query_group_count '#chart01', drawBarGraph
+	run_query_group_count '#chart03', drawPieGraph
+	run_query_daily_group_count '#chart02'
 
 refresh_graphs = ->
 	#Nothing... as of now
@@ -150,7 +163,7 @@ build_query = ->
 
 	the_versions = []
 	$('.data-version').each( ->
-		if $(this).prop 'dataFilter'
+		if $(this).attr 'data-filter'
 			the_versions.push $(this).val()
 	)
 
@@ -188,11 +201,11 @@ test_doest_exist = (qq) ->
 #|               QUERIES                 |
 #\---------------------------------------/
 
-run_query_art_count = (client, element) ->
+run_query_count = (element, chart_title) ->
 	k_query1 = build_query()
 	k_query2 = build_query()
-	k_query1['eventCollection'] = 'artSeen'
-	k_query2['eventCollection'] = 'artSeen'
+	k_query1['eventCollection'] = eventCollection
+	k_query2['eventCollection'] = eventCollection
 
 	query_art_count1 = new (Keen.Query)('count', no_tests(k_query1))
 	query_art_count2 = new (Keen.Query)('count', test_doest_exist(k_query2))
@@ -205,7 +218,7 @@ run_query_art_count = (client, element) ->
 		else
 			#console.log res
 
-			dataset = {total: 0, title: 'Total Pictures Unfolded Count'}
+			dataset = {total: 0, title: chart_title}
 
 			i=0
 			while i < res.length
@@ -217,11 +230,11 @@ run_query_art_count = (client, element) ->
 
 	return
 
-run_query_art_group_count = (client, element, drawAsGraph) ->
+run_query_group_count = (element, drawAsGraph) ->
 	k_query1 = build_query()
 	k_query2 = build_query()
-	k_query1['eventCollection'] = 'artSeen'
-	k_query2['eventCollection'] = 'artSeen'
+	k_query1['eventCollection'] = eventCollection
+	k_query2['eventCollection'] = eventCollection
 	group = ''
 	if $(element).attr 'data-grouped'
 		k_query1['groupBy'] = $(element).attr 'data-grouped'
@@ -276,11 +289,11 @@ run_query_art_group_count = (client, element, drawAsGraph) ->
 
 	return
 
-run_query_art_daily_group_count = (client, element) ->
+run_query_daily_group_count = (element) ->
 	k_query1 = build_query()
 	k_query2 = build_query()
-	k_query1['eventCollection'] = 'artSeen'
-	k_query2['eventCollection'] = 'artSeen'
+	k_query1['eventCollection'] = eventCollection
+	k_query2['eventCollection'] = eventCollection
 	group = ''
 	if $(element).attr 'data-grouped'
 		k_query1['groupBy'] = $(element).attr 'data-grouped'
