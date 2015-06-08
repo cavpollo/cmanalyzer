@@ -1,17 +1,25 @@
-<h1><span class="label label-default">Modes</span></h1>
+<h1><span class="label label-default">Game Types</span></h1>
 
 <div class="container-fluid">
   <div class="row">
-	<div class="col-sm-12">
+	<div class="col-md-9 col-sm-9 col-xs-12">
 	  <div class="panel panel-default">
 		<div class="panel-body">
-		  <input type="hidden" id="time_span" value="today">
-		  <button type="button" class="btn btn-success time-span" data-time="today">Today</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_1_weeks">This Week</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_2_weeks">This Two Weeks</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_1_months">This Month</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_2_months">This Two Months</button>
-		  <button type="button" class="btn btn-default time-span" data-time="this_1_years">This Year</button>
+		  <button type="button" class="btn btn-default data-version" value="2.4.1">v2.4.1</button>
+		  <button type="button" class="btn btn-default data-version" value="2.4.0">v2.4.0 (bug)</button>
+		  <button type="button" class="btn btn-default data-version" value="2.3.5">v2.3.5 (bug)</button>
+		  <button type="button" class="btn btn-default data-version" value="2.3.1">v2.3.1</button>
+		  <button type="button" class="btn btn-default data-version" value="2.3.0">v2.3.0 (bug)</button>
+		  <button type="button" class="btn btn-default data-version" value="2.1.1">v2.1.1</button>
+		  <button type="button" class="btn btn-default data-version" value="2.1.0">v2.1.0 (bug)</button>
+		  <button type="button" class="btn btn-default data-version" value="1.1.0">v1.1.0 (?)</button>
+		  <button type="button" class="btn btn-default data-version" value="1.0.14">v1.0.14 (?)</button>
+		</div>
+	  </div>
+	</div>
+	<div class="col-md-3 col-sm-3 col-xs-12">
+	  <div class="panel panel-default">
+		<div class="panel-body">
 		  <button id="daterange" type="button" class="btn btn-default">
 			<i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
 			<span></span> <b class="caret"></b>
@@ -21,12 +29,61 @@
 	</div>
   </div>
   <div class="row">
+	<div class="col-md-6 col-sm-12">
+	  <div class="panel panel-default">
+		<div class="panel-heading" style="font-size: 26px; font-weight: bold;">
+		  Game Type Count by day
+		</div>
+		<div id="chart04" class="panel-body chart">
+		  <div style="background-color: #49c5b1; border-radius: 8px; text-align: center; padding: 10px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #fff;">
+			<span class="chart-count" style="font-size:84px; font-weight: 700; line-height: 84px; display: block;">#</span>
+			<span class="chart-title" style="font-size:24px; font-weight: 200; display: block;">Title</span>
+		  </div>
+		</div>
+	  </div>
+	</div>
+	<div class="col-md-6 col-sm-12">
+	  <div class="panel panel-default">
+		<div class="panel-heading" style="font-size: 26px; font-weight: bold;">
+		  <span>Game Type Group Count</span>
+		  <span class="pull-right">
+			<button type="button" class="btn btn-default chart03" data-group="version">Group By Version</button>
+			<button type="button" class="btn btn-success chart03" data-group="gameTypeName">Group By Game Type</button>
+		  </span>
+		</div>
+		<div id="chart03" class="panel-body chart" data-grouped="gameTypeName">
+		</div>
+	  </div>
+	</div>
+  </div>
+  <div class="row">
 	<div class="col-sm-12">
 	  <div class="panel panel-default">
-		<div class="panel-heading">
-		  Fotografias
+		<div class="panel-heading" style="font-size: 26px; font-weight: bold;">
+		  <span>Game Type Count by day</span>
+		  <span class="pull-right">
+			<button id="stack_chart02" type="button" class="btn btn-default disabled">Stacked</button>
+			<button type="button" class="btn btn-default chart02" data-group="version">Group By Version</button>
+			<button type="button" class="btn btn-default chart02" data-group="gameTypeName">Group By Game Type</button>
+		  </span>
 		</div>
-		<div id="chart01" class="panel-body chart">
+		<div id="chart02" class="panel-body chart">
+		</div>
+	  </div>
+	</div>
+  </div>
+  <div class="row">
+	<div class="col-sm-12">
+	  <div class="panel panel-default">
+		<div class="panel-heading" style="font-size: 26px; font-weight: bold;">
+		  <span>Game Types Group Count</span>
+		  <span class="pull-right">
+			<button id="stack_chart01" type="button" class="btn btn-default hidden disabled">Stacked</button>
+			<button type="button" class="btn btn-default chart01" data-group="version">Group By Version</button>
+			<button type="button" class="btn btn-success chart01" data-group="gameTypeName">Group By Game Type</button>
+		  </span>
+		</div>
+		<div id="chart01" class="panel-body chart" data-grouped="gameTypeName">
 		</div>
 	  </div>
 	</div>

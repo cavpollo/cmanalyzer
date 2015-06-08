@@ -19,6 +19,9 @@ ready = ->
 	if $('body.webstats.link').length
 		eventCollection = 'openLink'
 
+	if $('body.webstats.mode').length
+		eventCollection = 'gameData'
+
 	if $('body.webstats.screen').length
 		eventCollection = 'enterScreen'
 
@@ -147,6 +150,9 @@ query_and_draw = ->
 
 	if $('body.webstats.link').length
 		chart_title = 'Total External Links Clicked'
+
+	if $('body.webstats.mode').length
+		chart_title = 'Total Game Types Played'
 
 	if $('body.webstats.screen').length
 		chart_title = 'Total Screens Visited Count'
