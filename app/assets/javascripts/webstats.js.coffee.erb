@@ -1,4 +1,3 @@
-all_json = {}
 chartPie = {}
 chartBar = {}
 chartLine = {}
@@ -17,6 +16,10 @@ ready = ->
 
 	if $('body.webstats.art').length
 		query_and_draw client
+
+#/---------------------------------------\
+#|               Filters                 |
+#\---------------------------------------/
 
 	$('#daterange span').html(moment().subtract(7, 'days').format('D/MM/YYYY') + ' - ' + moment().format('D/MM/YYYY'));
 	$('#daterange').daterangepicker {
@@ -98,8 +101,7 @@ ready = ->
 		else
 			$(this).removeClass('btn-default').addClass('btn-success')
 			$('#chart02').attr('data-stacked', 'true')
-			stacked = true
-		draw1LineGraph '#chart02', false
+		run_query_art_daily_group_count client, '#chart02'
 		return
 
 	$('.chart02').click ->
@@ -125,6 +127,10 @@ ready = ->
 		
 	return
 
+#/---------------------------------------\
+#|             Doc Stuff                 |
+#\---------------------------------------/
+
 $(document).ready ready
 $(document).on 'page:load', ready
 
@@ -135,9 +141,12 @@ query_and_draw = (client) ->
 	run_query_art_daily_group_count client, '#chart02'
 
 refresh_graphs = ->
-	if all_json['#chart01']
-		drawBar '#chart01', true
+	#Nothing... as of now
 	return
+
+#/---------------------------------------\
+#|                Utils                  |
+#\---------------------------------------/
 
 build_query = ->
 	the_query = {}
@@ -295,12 +304,10 @@ run_query_art_daily_group_count = (client, element) ->
 		else
 			#console.log res
 
-			all_json[element] = {
-				data: {
-					xDataset: ['x']
-					yDataset: []
-					linesDataset: []
-				}
+			dataset = {
+				xDataset: ['x']
+				yDataset: []
+				linesDataset: []
 			}
 
 			i=1
@@ -356,52 +363,56 @@ run_query_art_daily_group_count = (client, element) ->
 			while i < quack.length
 				xdate = moment(quack[i]['timeframe']['start'])
 				if moment().isAfter(xdate)
-					all_json[element].data.xDataset.push xdate.add(1, 'days').format('YYYY-MM-DD')
+					dataset.xDataset.push xdate.add(1, 'days').format('YYYY-MM-DD')
 					if group != ''
 						j=0
 						while j < quack[i].value.length
 							if i==0
-								all_json[element].data.yDataset.push []
-								all_json[element].data.yDataset[j].push quack[i].value[j][group]
-							all_json[element].data.yDataset[j].push quack[i].value[j].result
+								dataset.yDataset.push []
+								dataset.yDataset[j].push quack[i].value[j][group]
+							dataset.yDataset[j].push quack[i].value[j].result
 							j++
 					else
 						if i==0
-							all_json[element].data.yDataset.push ['All']
-						all_json[element].data.yDataset[0].push quack[i].value
+							dataset.yDataset.push ['All']
+						dataset.yDataset[0].push quack[i].value
 				i++
 
 			#Vertical Date Checkpoints
-			all_json[element].data.linesDataset.push {value: '2015-05-14', text: 'TV Show Tuti'} #8PM, also 2015-05-15 12PM
-			#all_json[element].data.linesDataset.push {value: '2015-05-14', text: 'End FB Ads'} #12:55... Too Crammed
-			all_json[element].data.linesDataset.push {value: '2015-05-11', text: 'Start FB Ads'} #13:17
-			all_json[element].data.linesDataset.push {value: '2014-10-22', text: 'v2.4.1'}
-			#all_json[element].data.linesDataset.push {value: '2014-10-22', text: 'v2.4.0'} Negiglible...
-			#all_json[element].data.linesDataset.push {value: '2014-10-21', text: 'v2.3.5'} Mess up fixed day after
-			all_json[element].data.linesDataset.push {value: '2014-09-14', text: 'v2.3.1'}
-			#all_json[element].data.linesDataset.push {value: '2014-09-14', text: 'v2.3.0'} Negiglible...
-			all_json[element].data.linesDataset.push {value: '2014-07-24', text: 'v2.1.1'}
-			#all_json[element].data.linesDataset.push {value: '2014-07-24', text: 'v2.1.0'} Negiglible
-			#all_json[element].data.linesDataset.push {value: '2014-06-05', text: 'v1.1.0'} Stuck in flurry...
-			#all_json[element].data.linesDataset.push {value: '2014-06-03', text: 'v1.0.14'} Stuck in flurry...
+			dataset.linesDataset.push {value: '2015-05-14', text: 'TV Show Tuti'} #8PM, also 2015-05-15 12PM
+			#dataset.linesDataset.push {value: '2015-05-14', text: 'End FB Ads'} #12:55... Too Crammed
+			dataset.linesDataset.push {value: '2015-05-11', text: 'Start FB Ads'} #13:17
+			dataset.linesDataset.push {value: '2014-10-22', text: 'v2.4.1'}
+			#dataset.linesDataset.push {value: '2014-10-22', text: 'v2.4.0'} Negiglible...
+			#dataset.linesDataset.push {value: '2014-10-21', text: 'v2.3.5'} Mess up fixed day after
+			dataset.linesDataset.push {value: '2014-09-14', text: 'v2.3.1'}
+			#dataset.linesDataset.push {value: '2014-09-14', text: 'v2.3.0'} Negiglible...
+			dataset.linesDataset.push {value: '2014-07-24', text: 'v2.1.1'}
+			#dataset.linesDataset.push {value: '2014-07-24', text: 'v2.1.0'} Negiglible
+			#dataset.linesDataset.push {value: '2014-06-05', text: 'v1.1.0'} Stuck in flurry...
+			#dataset.linesDataset.push {value: '2014-06-03', text: 'v1.0.14'} Stuck in flurry...
 
-			draw1LineGraph element, false
+			draw1LineGraph element, dataset
 		return
 
 	return
 
-draw1LineGraph = (element, resize) ->
+#/---------------------------------------\
+#|                GRAPHS                 |
+#\---------------------------------------/
+
+draw1LineGraph = (element, dataset) ->
 	$(element).html('');
 
 	chartColumns = []
-	chartColumns.push all_json[element]['data']['xDataset']
+	chartColumns.push dataset.xDataset
 	chartGroups = []
 	chartTypes = {}
 	i = 0
-	while i < all_json[element]['data']['yDataset'].length
-		chartColumns.push all_json[element]['data']['yDataset'][i]
-		chartGroups.push all_json[element]['data']['yDataset'][i][0]
-		chartTypes[all_json[element]['data']['yDataset'][i][0]] = 'area' #'area-spline'
+	while i < dataset.yDataset.length
+		chartColumns.push dataset.yDataset[i]
+		chartGroups.push dataset.yDataset[i][0]
+		chartTypes[dataset.yDataset[i][0]] = 'area' #'area-spline'
 		i++
 
 	chart_data = {
@@ -414,8 +425,8 @@ draw1LineGraph = (element, resize) ->
 
 	i=0
 	chart_lines = []
-	while i < all_json[element]['data']['linesDataset'].length
-		chart_lines.push {value: all_json[element]['data']['linesDataset'][i]['value'], text: all_json[element]['data']['linesDataset'][i]['text']}
+	while i < dataset.linesDataset.length
+		chart_lines.push {value: dataset.linesDataset[i]['value'], text: dataset.linesDataset[i]['text']}
 		i++
 
 	chartLine = c3.generate({
