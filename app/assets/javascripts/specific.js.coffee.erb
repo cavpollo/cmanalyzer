@@ -1,0 +1,230 @@
+client = null
+
+ready = ->
+	client = new Keen(
+		projectId: '<%= Rails.application.secrets.keen_projectid %>',
+		readKey: '<%= Rails.application.secrets.keen_readkey %>',
+		protocol: 'https',
+		host: 'api.keen.io/3.0',
+		requestType: 'jsonp')
+
+	d3.select(window).on('resize', refresh_graphs)
+
+	run_query_fail_position()
+
+#/---------------------------------------\
+#|             Doc Stuff                 |
+#\---------------------------------------/
+
+$(document).ready ready
+$(document).on 'page:load', ready
+
+refresh_graphs = ->
+	#Nothing... as of now
+	return
+
+#/---------------------------------------\
+#|                Utils                  |
+#\---------------------------------------/
+
+create_element = (title, e_id) ->
+
+	col_e = jQuery('<div/>', {
+		class: 'col-md-6 col-sm-12'
+	});
+
+	panel_e = jQuery('<div/>', {
+		class: 'panel panel-default'
+	});
+
+	header_e = jQuery('<div/>', {
+		class: 'panel-heading'
+		style: 'font-size: 26px; font-weight: bold;'
+	}).html(title);
+
+	content_e = jQuery('<div/>', {
+		id: e_id
+		class: 'panel-body chart'
+	});
+
+	#clocky thingy
+	panel_e.append header_e
+	panel_e.append content_e
+	col_e.append panel_e
+	$('#results').append col_e
+
+	return
+
+no_tests = (qq) ->
+	the_q = qq
+	the_q['filters'].push {
+		property_name: 'test'
+		operator: 'eq'
+		property_value: false}
+	return the_q
+
+test_doest_exist = (qq) ->
+	the_q = qq
+	the_q['filters'].push {
+		property_name: 'test'
+		operator: 'exists'
+		property_value: false}
+	return the_q
+
+#/---------------------------------------\
+#|               QUERIES                 |
+#\---------------------------------------/
+
+run_query_fail_position = ->
+	$('#results').html('<div class="loady"><div class="arc1"></div></div>')
+
+	#'ARCADEFAST','ARCADENORMAL','ARCADESLOW','JUMPBAR','JUMPTIME','MADNESS','TIME'
+	keen_queries = []
+
+	the_query = {}
+	the_query['eventCollection'] = 'gameData'
+	the_query['filters'] = []
+	the_query['filters'].push {
+		property_name: 'version'
+		operator: 'in'
+		property_value: ['2.4.1','2.3.1','2.1.1']}
+
+	col_query = $.extend(true, {}, the_query)
+	row_query = $.extend(true, {}, the_query)
+	col_game_query = $.extend(true, {}, the_query)
+	row_game_query = $.extend(true, {}, the_query)
+
+	#BlockCol
+	col_query['groupBy'] = ['blockCol']
+	col_query['filters'].push {
+		property_name: 'blockCol'
+		operator: 'gte'
+		property_value: 0}
+
+	keen_queries.push(new (Keen.Query)('count', no_tests($.extend(true, {}, col_query))))
+	keen_queries.push(new (Keen.Query)('count', test_doest_exist($.extend(true, {}, col_query))))
+
+	#BlockCol
+	col_game_query['groupBy'] = ['gameTypeName', 'blockCol']
+	col_game_query['filters'].push {
+		property_name: 'blockCol'
+		operator: 'gte'
+		property_value: 0}
+
+	keen_queries.push(new (Keen.Query)('count', no_tests($.extend(true, {}, col_game_query))))
+	keen_queries.push(new (Keen.Query)('count', test_doest_exist($.extend(true, {}, col_game_query))))
+
+	#BlockRow
+	row_query['groupBy'] = ['blockRow']
+	row_query['filters'].push {
+		property_name: 'blockRow'
+		operator: 'gte'
+		property_value: 0}
+
+	keen_queries.push(new (Keen.Query)('count', no_tests($.extend(true, {}, row_query))))
+	keen_queries.push(new (Keen.Query)('count', test_doest_exist($.extend(true, {}, row_query))))
+
+	#BlockRow
+	row_game_query['groupBy'] = ['gameTypeName', 'blockRow']
+	row_game_query['filters'].push {
+		property_name: 'blockRow'
+		operator: 'gte'
+		property_value: 0}
+
+	keen_queries.push(new (Keen.Query)('count', no_tests($.extend(true, {}, row_game_query))))
+	keen_queries.push(new (Keen.Query)('count', test_doest_exist($.extend(true, {}, row_game_query))))
+
+	console.log keen_queries
+
+	client.run keen_queries, (err, res) ->
+		if err
+		else
+			console.log res
+			$('#results').html('')
+
+			dataset = []
+
+			#Creates XAll & YAll
+			i=0
+			while i < res.length
+				j=0
+				while j < res[i]['result'].length
+					if res[i]['result'][j]['result'] != 0 && res[i]['result'][j]['gameTypeName'] == undefined
+						if res[i]['result'][j]['blockCol'] != undefined
+							if $('#x_all').length == 0
+								create_element 'X All', 'x_all'
+							#Add to data
+						if res[i]['result'][j]['blockRow'] != undefined
+							if $('#y_all').length == 0
+								create_element 'Y All', 'y_all'
+							#Add to data
+
+					j++
+				i++
+
+			#Creates X<gametypename> and Y<gametypename>
+
+			i=0
+			while i < res.length
+				j=0
+				while j < res[i]['result'].length
+					if res[i]['result'][j]['result'] != 0 && res[i]['result'][j]['gameTypeName'] != undefined && res[i]['result'][j]['gameTypeName'] != null
+						if res[i]['result'][j]['blockCol'] != undefined
+							if $('#x_' + res[i]['result'][j]['gameTypeName']).length == 0
+								create_element 'X '+res[i]['result'][j]['gameTypeName'], 'x_'+res[i]['result'][j]['gameTypeName']
+							#Add to data
+						if res[i]['result'][j]['blockRow'] != undefined
+							if $('#y_' + res[i]['result'][j]['gameTypeName']).length == 0
+								create_element 'Y '+res[i]['result'][j]['gameTypeName'], 'y_'+res[i]['result'][j]['gameTypeName']
+							#Add to data
+					j++
+				i++
+
+			#$drawTotalBlock element, dataset
+		return
+
+	return
+
+#/---------------------------------------\
+#|                GRAPHS                 |
+#\---------------------------------------/
+
+drawPieGraph = (element, dataset) ->
+	$(element + ' > div.loady').remove()
+
+	chartColumns = []
+	i = 0
+	while i < dataset.length
+		chartColumns.push dataset[i]
+		i++
+
+	c3.generate({
+		bindto: element
+		data: {
+			columns: chartColumns
+			type: 'pie'
+		}
+		legend: {
+			position: 'right'
+		}
+		size: {
+			height: $(element).height()
+			width: $(element).width()
+		}
+		tooltip:
+			format:
+				title: (d) ->
+					return d
+				value: (value, ratio, id) ->
+					return value + ' - ' + Math.floor(ratio*100) + '%'
+	})
+
+	return
+
+drawTotalBlock = (element, dataset) ->
+	$(element + ' > div.loady').remove()
+
+	$(element + ' > div > span.chart-count').html(dataset['total']);
+	$(element + ' > div > span.chart-title').html(dataset['title']);
+
+	return
