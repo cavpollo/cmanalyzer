@@ -49,4 +49,5 @@ group :development, :test do
 end
 
 #Project Stuff
+gem 'keen'
 gem 'rinruby'
