@@ -18,10 +18,10 @@ ActiveRecord::Schema.define(version: 20150904000002) do
 
   create_table "unique_devices", force: :cascade do |t|
     t.string   "device_id",       null: false
-    t.string   "device_density",  null: false
-    t.string   "device_height",   null: false
-    t.string   "device_width",    null: false
-    t.string   "device_h_diff",   null: false
+    t.float    "device_density",  null: false
+    t.float    "device_height",   null: false
+    t.float    "device_width",    null: false
+    t.float    "device_h_diff",   null: false
     t.date     "first_play_date", null: false
     t.date     "last_play_date",  null: false
     t.datetime "created_at",      null: false
