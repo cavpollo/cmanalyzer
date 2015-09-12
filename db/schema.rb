@@ -11,9 +11,48 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 0) do
+ActiveRecord::Schema.define(version: 20150904000003) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "last_data_loads", force: :cascade do |t|
+    t.string   "process_name",        null: false
+    t.date     "last_data_load_date", null: false
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+  end
+
+  create_table "unique_devices", force: :cascade do |t|
+    t.string   "device_id",       null: false
+    t.float    "device_density",  null: false
+    t.float    "device_height",   null: false
+    t.float    "device_width",    null: false
+    t.float    "device_h_diff",   null: false
+    t.integer  "play_count",      null: false
+    t.date     "first_play_date", null: false
+    t.date     "last_play_date",  null: false
+    t.datetime "created_at",      null: false
+    t.datetime "updated_at",      null: false
+  end
+
+  create_table "unique_users", force: :cascade do |t|
+    t.integer  "unique_device_id", null: false
+    t.string   "user_gplay_id",    null: false
+    t.string   "user_gender",      null: false
+    t.string   "user_language",    null: false
+    t.date     "first_play_date",  null: false
+    t.date     "last_play_date",   null: false
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
+  end
+
+  create_table "unique_versions", force: :cascade do |t|
+    t.integer  "unique_user_id", null: false
+    t.string   "game_version",   null: false
+    t.integer  "play_count",     null: false
+    t.datetime "created_at",     null: false
+    t.datetime "updated_at",     null: false
+  end
 
 end

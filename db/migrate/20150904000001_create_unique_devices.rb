@@ -8,6 +8,7 @@ class CreateUniqueDevices < ActiveRecord::Migration
       t.float :device_height, :null => false
       t.float :device_width, :null => false
       t.float :device_h_diff, :null => false
+      t.integer :play_count, :null => false
       t.date :first_play_date, :null => false
       t.date :last_play_date, :null => false
 
