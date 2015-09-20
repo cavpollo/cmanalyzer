@@ -4,6 +4,8 @@ class CreateUniqueDevices < ActiveRecord::Migration
   def change
     create_table :unique_devices do |t|
       t.string :device_id, :null => false
+      t.string :device_model, :null => false
+      t.string :device_device, :null => false
       t.float :device_density, :null => false
       t.float :device_height, :null => false
       t.float :device_width, :null => false

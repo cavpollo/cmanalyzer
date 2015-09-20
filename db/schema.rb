@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150904000003) do
+ActiveRecord::Schema.define(version: 20150904000004) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -24,16 +24,20 @@ ActiveRecord::Schema.define(version: 20150904000003) do
   end
 
   create_table "unique_devices", force: :cascade do |t|
-    t.string   "device_id",       null: false
-    t.float    "device_density",  null: false
-    t.float    "device_height",   null: false
-    t.float    "device_width",    null: false
-    t.float    "device_h_diff",   null: false
-    t.integer  "play_count",      null: false
-    t.date     "first_play_date", null: false
-    t.date     "last_play_date",  null: false
-    t.datetime "created_at",      null: false
-    t.datetime "updated_at",      null: false
+    t.string   "device_id",                    null: false
+    t.string   "device_model",                 null: false
+    t.string   "device_device",                null: false
+    t.float    "device_density",               null: false
+    t.float    "device_height",                null: false
+    t.float    "device_width",                 null: false
+    t.float    "device_h_diff",                null: false
+    t.integer  "play_count",                   null: false
+    t.date     "first_play_date",              null: false
+    t.date     "last_play_date",               null: false
+    t.datetime "created_at",                   null: false
+    t.datetime "updated_at",                   null: false
+    t.string   "device_brand",    default: "", null: false
+    t.string   "device_name",     default: "", null: false
   end
 
   create_table "unique_users", force: :cascade do |t|
@@ -48,11 +52,11 @@ ActiveRecord::Schema.define(version: 20150904000003) do
   end
 
   create_table "unique_versions", force: :cascade do |t|
-    t.integer  "unique_user_id", null: false
-    t.string   "game_version",   null: false
-    t.integer  "play_count",     null: false
-    t.datetime "created_at",     null: false
-    t.datetime "updated_at",     null: false
+    t.integer  "unique_device_id", null: false
+    t.string   "game_version",     null: false
+    t.integer  "play_count",       null: false
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
   end
 
 end
