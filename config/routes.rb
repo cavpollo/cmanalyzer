@@ -14,6 +14,11 @@ Rails.application.routes.draw do
   get 'specific' => 'specific#index'
   get 'specific/position' => 'specific#position'
 
+  get 'localstats/app_access' => 'localstats#app_access'
+  get 'localstats/app_access_data' => 'localstats#app_access_data'
+  get 'localstats/devices' => 'localstats#devices'
+  get 'localstats/devices_data' => 'localstats#devices_data'
+
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 
