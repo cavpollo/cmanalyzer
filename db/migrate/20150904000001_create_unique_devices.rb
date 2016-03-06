@@ -3,16 +3,16 @@ class CreateUniqueDevices < ActiveRecord::Migration
   #Data slurped from ScreenProperties
   def change
     create_table :unique_devices do |t|
-      t.string :device_id, :null => false
-      t.string :device_model, :null => false
-      t.string :device_device, :null => false
-      t.float :device_density, :null => false
-      t.float :device_height, :null => false
-      t.float :device_width, :null => false
-      t.float :device_h_diff, :null => false
-      t.integer :play_count, :null => false
-      t.date :first_play_date, :null => false
-      t.date :last_play_date, :null => false
+      t.string :device_id, null: false
+      t.string :device_model, null: false
+      t.string :device_device, null: false
+      t.float :device_density, null: false
+      t.float :device_height, null: false
+      t.float :device_width, null: false
+      t.float :device_h_diff, null: false
+      t.integer :play_count, null: false
+      t.date :first_play_date, null: false
+      t.date :last_play_date, null: false
 
       t.timestamps null: false
     end

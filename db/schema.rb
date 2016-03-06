@@ -17,10 +17,11 @@ ActiveRecord::Schema.define(version: 20150904000004) do
   enable_extension "plpgsql"
 
   create_table "last_data_loads", force: :cascade do |t|
-    t.string   "process_name",        null: false
-    t.date     "last_data_load_date", null: false
-    t.datetime "created_at",          null: false
-    t.datetime "updated_at",          null: false
+    t.string   "process_name",   null: false
+    t.string   "last_keen_date", null: false
+    t.string   "last_keen_id",   null: false
+    t.datetime "created_at",     null: false
+    t.datetime "updated_at",     null: false
   end
 
   create_table "unique_devices", force: :cascade do |t|
@@ -55,6 +56,8 @@ ActiveRecord::Schema.define(version: 20150904000004) do
     t.integer  "unique_device_id", null: false
     t.string   "game_version",     null: false
     t.integer  "play_count",       null: false
+    t.date     "first_play_date",  null: false
+    t.date     "last_play_date",   null: false
     t.datetime "created_at",       null: false
     t.datetime "updated_at",       null: false
   end

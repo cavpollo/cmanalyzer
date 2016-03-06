@@ -5,8 +5,8 @@ endDate = moment().add(1, 'days')
 
 ready = ->
 	client = new Keen(
-		projectId: '<%= Rails.application.secrets.keen_projectid %>',
-		readKey: '<%= Rails.application.secrets.keen_readkey %>',
+		projectId: '<%= ENV['KEEN_PROJECT_ID'] %>',
+		readKey: '<%= ENV['KEEN_READ_KEY'] %>',
 		protocol: 'https',
 		host: 'api.keen.io/3.0',
 		requestType: 'jsonp')
