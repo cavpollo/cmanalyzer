@@ -15,7 +15,7 @@ class LocalstatsController < ApplicationController
     brands = brands_count.reject { |key, value| value <= min_brand_count }
     brands["Other (less than #{min_brand_count})"] = brands_count.reject { |key, value| value > min_brand_count }.collect{ |key, value| value }.sum
 
-    min_model_count = 14
+    min_model_count = 13
     models_count = UniqueDevice.group(:device_model).order(:device_model).count()
     models = models_count.reject { |key, value| value <= min_model_count }
     models["Other (less than #{min_model_count})"] = models_count.reject { |key, value| value > min_model_count }.collect{ |key, value| value }.sum

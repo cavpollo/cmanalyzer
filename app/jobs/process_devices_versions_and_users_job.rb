@@ -22,6 +22,10 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
     ldl
   end
 
+  def not_test_conditions(test, version)
+    ((!test.nil? && (test.is_a?(FalseClass) || (test.is_a?(String) && test == 'false'))) || test.nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(version)
+  end
+  
   def perform(*args)
     puts 'STARTED'
 
@@ -32,10 +36,10 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
 
 
     ldl = get_ldl(PROCESS_1)
-    puts "\nSTART PROCESS: #{PROCESS_1} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
-    start_date_s = DateTime.strptime(LAST_DATE_STRING, DATE_FORMAT) - DATE_STEP
-    new_t = 0
-    update_t = 0
+    puts "\nSTART PROCESS: #{PROCESS_1}"
+    start_date_s = ldl.last_keen_date - DATE_STEP
+    # new_t = 0
+    # update_t = 0
     begin
       start_date_s = start_date_s + DATE_STEP
       end_date_s = start_date_s + DATE_STEP
@@ -43,29 +47,29 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
                                          timeframe: {start: start_date_s.strftime(DATE_FORMAT), end: end_date_s.strftime(DATE_FORMAT)}
       )#filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
 
-      puts "FOUND #{screenProperties.size} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+      puts "FOUND #{screenProperties.size} - #{ldl.last_keen_date} - #{ldl.last_keen_id}"
       if screenProperties.size > 0
         screenProperties.sort_by! { |hsh| hsh['keen']['timestamp'] }
         # puts "ID RANGE: [#{screenProperties.first['keen']['id']} - #{screenProperties.last['keen']['id']}]"
         puts "DATE RANGE: [#{screenProperties.first['keen']['timestamp']} - #{screenProperties.last['keen']['timestamp']}]"
       end
 
-      new_c = 0
-      update_c = 0
+      # new_c = 0
+      # update_c = 0
       screenProperties.each do |row|
-        if ((!row['test'].nil? && (row['test'].is_a?(FalseClass) || (row['test'].is_a?(String) && row['test'] == 'false'))) || row['test'].nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(row['version'])
+        if not_test_conditions(row['test'], row['version'])
           keen_date = DateTime.strptime(row['keen']['timestamp'], DATE_FORMAT)
 
           u_device = UniqueDevice.find_by(device_id: row['userID'])
           if u_device
-            update_c = update_c + 1
+            # update_c = update_c + 1
             if u_device.last_play_date < keen_date
               u_device.last_play_date = keen_date
             end
             u_device.play_count = u_device.play_count + 1
             u_device.save!
           else
-            new_c = new_c + 1
+            # new_c = new_c + 1
             u_device = UniqueDevice.new
             u_device.device_id = row['userID']
             u_device.device_model = ''
@@ -95,10 +99,9 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
         end
       end
 
-      puts "COUNT - NEW:#{new_c} - UPDATE:#{update_c}"
-
-      new_t = new_t + new_c
-      update_t = update_t + update_c
+      # puts "COUNT - NEW:#{new_c} - UPDATE:#{update_c}"
+      #new_t = new_t + new_c
+      #update_t = update_t + update_c
 
       if screenProperties.size > 0
         ldl.last_keen_id = screenProperties.last['keen']['id']
@@ -106,13 +109,13 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
         ldl.save!
       end
     end while end_date_s < now_date
-    puts "COUNT - NEW_T:#{new_t} - UPDATE_T:#{update_t}"
+    # puts "COUNT - NEW_T:#{new_t} - UPDATE_T:#{update_t}"
     puts "END PROCESS: #{PROCESS_1}"
 
 
     ldl = get_ldl(PROCESS_2)
-    puts "\nSTART PROCESS: #{PROCESS_2} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
-    start_date_s = DateTime.strptime(LAST_DATE_STRING, DATE_FORMAT) - DATE_STEP
+    puts "\nSTART PROCESS: #{PROCESS_2}"
+    start_date_s = ldl.last_keen_date - DATE_STEP
     begin
       start_date_s = start_date_s + DATE_STEP
       end_date_s = start_date_s + DATE_STEP
@@ -120,7 +123,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
                                           timeframe: {start: start_date_s.strftime(DATE_FORMAT), end: end_date_s.strftime(DATE_FORMAT)}#,
       )#filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
 
-      puts "FOUND #{androidDeviceInfo.size} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+      puts "FOUND #{androidDeviceInfo.size} - #{ldl.last_keen_date} - #{ldl.last_keen_id}"
       if androidDeviceInfo.size > 0
         androidDeviceInfo.sort_by! { |hsh| hsh['keen']['timestamp'] }
         # puts "ID RANGE: [#{androidDeviceInfo.first['keen']['id']} - #{androidDeviceInfo.last['keen']['id']}]"
@@ -128,7 +131,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
       end
 
       androidDeviceInfo.each do |row|
-        if ((!row['test'].nil? && (row['test'].is_a?(FalseClass) || (row['test'].is_a?(String) && row['test'] == 'false'))) || row['test'].nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(row['version'])
+        if not_test_conditions(row['test'], row['version'])
           # keen_date = DateTime.strptime(row['keen']['timestamp'], DATE_FORMAT)
 
           u_device = UniqueDevice.find_by(device_id: row['userID'])
@@ -150,8 +153,8 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
 
 
     ldl = get_ldl(PROCESS_3)
-    puts "\nSTART PROCESS: #{PROCESS_3} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
-    start_date_s = DateTime.strptime(LAST_DATE_STRING, DATE_FORMAT) - DATE_STEP
+    puts "\nSTART PROCESS: #{PROCESS_3}"
+    start_date_s = ldl.last_keen_date - DATE_STEP
     begin
       start_date_s = start_date_s + DATE_STEP
       end_date_s = start_date_s + DATE_STEP
@@ -159,7 +162,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
                                        timeframe: {start: start_date_s.strftime(DATE_FORMAT), end: end_date_s.strftime(DATE_FORMAT)}#,
       )#filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
 
-      puts "FOUND #{googlePlayInfo.size} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+      puts "FOUND #{googlePlayInfo.size} - #{ldl.last_keen_date} - #{ldl.last_keen_id}"
       if googlePlayInfo.size > 0
         googlePlayInfo.sort_by! { |hsh| hsh['keen']['timestamp'] }
         # puts "ID RANGE: [#{googlePlayInfo.first['keen']['id']} - #{googlePlayInfo.last['keen']['id']}]"
@@ -167,7 +170,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
       end
 
       googlePlayInfo.each do |row|
-        if ((!row['test'].nil? && (row['test'].is_a?(FalseClass) || (row['test'].is_a?(String) && row['test'] == 'false'))) || row['test'].nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(row['version'])
+        if not_test_conditions(row['test'], row['version'])
           keen_date = DateTime.strptime(row['keen']['timestamp'], '%Y-%m-%dT%H:%M:%S.%LZ')
 
           u_device = UniqueDevice.find_by(device_id: row['userID'])
@@ -212,7 +215,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
 
     puts 'DONE'
   end
-
+  
   def check_device()
     #https://gist.github.com/jaredrummler/16ed4f1c14189375131d
     #Retail Branding|Marketing Name|Device|Model
