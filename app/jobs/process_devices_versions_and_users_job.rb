@@ -5,6 +5,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
 
   DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%LZ'
   LAST_DATE_STRING = '2014-07-24T06:00:00.000Z'
+  DATE_STEP = 2.months
   PROCESS_1 = 'ProcessDevicesVersionsAndUsers-screenProperties'
   PROCESS_2 = 'ProcessDevicesVersionsAndUsers-androidDeviceInfo'
   PROCESS_3 = 'ProcessDevicesVersionsAndUsers-googlePlayInfo'
@@ -24,35 +25,47 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
   def perform(*args)
     puts 'STARTED'
 
-    end_date_s = Time.zone.now.strftime(DATE_FORMAT)
+    now_date = Time.zone.now
 
     #Extractions are rate limited at 1,000/minute, but are considered separately from query rate limiting.
     #The maximum number of events that can be returned in a synchronous JSON response is 100,000. Requests exceeding this limit will error.
+
+
     ldl = get_ldl(PROCESS_1)
-    puts "START PROCESS: #{PROCESS_1} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+    puts "\nSTART PROCESS: #{PROCESS_1} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+    start_date_s = DateTime.strptime(LAST_DATE_STRING, DATE_FORMAT) - DATE_STEP
+    new_t = 0
+    update_t = 0
     begin
+      start_date_s = start_date_s + DATE_STEP
+      end_date_s = start_date_s + DATE_STEP
       screenProperties = Keen.extraction('screenProperties',
-                                         timeframe: {start: LAST_DATE_STRING, end: end_date_s},
-                                         filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
+                                         timeframe: {start: start_date_s.strftime(DATE_FORMAT), end: end_date_s.strftime(DATE_FORMAT)}
+      )#filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
 
       puts "FOUND #{screenProperties.size} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
       if screenProperties.size > 0
-        puts "ID RANGE: [#{screenProperties.first['keen']['id']} - #{screenProperties.last['keen']['id']}]"
+        screenProperties.sort_by! { |hsh| hsh['keen']['timestamp'] }
+        # puts "ID RANGE: [#{screenProperties.first['keen']['id']} - #{screenProperties.last['keen']['id']}]"
         puts "DATE RANGE: [#{screenProperties.first['keen']['timestamp']} - #{screenProperties.last['keen']['timestamp']}]"
       end
 
+      new_c = 0
+      update_c = 0
       screenProperties.each do |row|
-        if (row['test'] && (row['test'] == '' || row['test'] == 'false')) || row['test'].nil?
+        if ((!row['test'].nil? && (row['test'].is_a?(FalseClass) || (row['test'].is_a?(String) && row['test'] == 'false'))) || row['test'].nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(row['version'])
           keen_date = DateTime.strptime(row['keen']['timestamp'], DATE_FORMAT)
 
           u_device = UniqueDevice.find_by(device_id: row['userID'])
           if u_device
+            update_c = update_c + 1
             if u_device.last_play_date < keen_date
               u_device.last_play_date = keen_date
             end
             u_device.play_count = u_device.play_count + 1
             u_device.save!
           else
+            new_c = new_c + 1
             u_device = UniqueDevice.new
             u_device.device_id = row['userID']
             u_device.device_model = ''
@@ -77,32 +90,45 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
           else
             u_device.unique_versions.create(game_version: row['version'], play_count: 1, first_play_date: keen_date, last_play_date: keen_date)
           end
+        else
+          puts "REJECTED: T:[#{row['test'].inspect}] V:[#{row['version'].inspect}], #{row['test'].nil?}, #{row['test'].is_a?(FalseClass)}, #{row['test'].is_a?(String)}"
         end
       end
+
+      puts "COUNT - NEW:#{new_c} - UPDATE:#{update_c}"
+
+      new_t = new_t + new_c
+      update_t = update_t + update_c
 
       if screenProperties.size > 0
         ldl.last_keen_id = screenProperties.last['keen']['id']
         ldl.last_keen_date = DateTime.strptime(screenProperties.last['keen']['timestamp'], DATE_FORMAT)
         ldl.save!
       end
-    end while screenProperties.size > 0
+    end while end_date_s < now_date
+    puts "COUNT - NEW_T:#{new_t} - UPDATE_T:#{update_t}"
     puts "END PROCESS: #{PROCESS_1}"
 
+
     ldl = get_ldl(PROCESS_2)
-    puts "START PROCESS: #{PROCESS_2} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+    puts "\nSTART PROCESS: #{PROCESS_2} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+    start_date_s = DateTime.strptime(LAST_DATE_STRING, DATE_FORMAT) - DATE_STEP
     begin
+      start_date_s = start_date_s + DATE_STEP
+      end_date_s = start_date_s + DATE_STEP
       androidDeviceInfo = Keen.extraction('androidDeviceInfo',
-                                          timeframe: {start: LAST_DATE_STRING, end: end_date_s},
-                                          filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
+                                          timeframe: {start: start_date_s.strftime(DATE_FORMAT), end: end_date_s.strftime(DATE_FORMAT)}#,
+      )#filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
 
       puts "FOUND #{androidDeviceInfo.size} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
       if androidDeviceInfo.size > 0
-        puts "ID RANGE: [#{androidDeviceInfo.first['keen']['id']} - #{androidDeviceInfo.last['keen']['id']}]"
+        androidDeviceInfo.sort_by! { |hsh| hsh['keen']['timestamp'] }
+        # puts "ID RANGE: [#{androidDeviceInfo.first['keen']['id']} - #{androidDeviceInfo.last['keen']['id']}]"
         puts "DATE RANGE: [#{androidDeviceInfo.first['keen']['timestamp']} - #{androidDeviceInfo.last['keen']['timestamp']}]"
       end
 
       androidDeviceInfo.each do |row|
-        if (row['test'] && (row['test'] == '' || row['test'] == 'false')) || row['test'].nil?
+        if ((!row['test'].nil? && (row['test'].is_a?(FalseClass) || (row['test'].is_a?(String) && row['test'] == 'false'))) || row['test'].nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(row['version'])
           # keen_date = DateTime.strptime(row['keen']['timestamp'], DATE_FORMAT)
 
           u_device = UniqueDevice.find_by(device_id: row['userID'])
@@ -119,24 +145,29 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
         ldl.last_keen_date = DateTime.strptime(androidDeviceInfo.last['keen']['timestamp'], DATE_FORMAT)
         ldl.save!
       end
-    end while androidDeviceInfo.size > 0
+    end while end_date_s < now_date
     puts "END PROCESS: #{PROCESS_2}"
 
+
     ldl = get_ldl(PROCESS_3)
-    puts "START PROCESS: #{PROCESS_3} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+    puts "\nSTART PROCESS: #{PROCESS_3} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
+    start_date_s = DateTime.strptime(LAST_DATE_STRING, DATE_FORMAT) - DATE_STEP
     begin
+      start_date_s = start_date_s + DATE_STEP
+      end_date_s = start_date_s + DATE_STEP
       googlePlayInfo = Keen.extraction('googlePlayInfo',
-                                          timeframe: {start: LAST_DATE_STRING, end: end_date_s},
-                                          filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
+                                       timeframe: {start: start_date_s.strftime(DATE_FORMAT), end: end_date_s.strftime(DATE_FORMAT)}#,
+      )#filters: [{operator: 'gt', property_name: 'keen.id', property_value: ldl.last_keen_id}])
 
       puts "FOUND #{googlePlayInfo.size} - #{ldl.last_keen_id} - #{ldl.last_keen_date}"
       if googlePlayInfo.size > 0
-        puts "ID RANGE: [#{googlePlayInfo.first['keen']['id']} - #{googlePlayInfo.last['keen']['id']}]"
+        googlePlayInfo.sort_by! { |hsh| hsh['keen']['timestamp'] }
+        # puts "ID RANGE: [#{googlePlayInfo.first['keen']['id']} - #{googlePlayInfo.last['keen']['id']}]"
         puts "DATE RANGE: [#{googlePlayInfo.first['keen']['timestamp']} - #{googlePlayInfo.last['keen']['timestamp']}]"
       end
 
       googlePlayInfo.each do |row|
-        if (row['test'] && (row['test'] == '' || row['test'] == 'false')) || row['test'].nil?
+        if ((!row['test'].nil? && (row['test'].is_a?(FalseClass) || (row['test'].is_a?(String) && row['test'] == 'false'))) || row['test'].nil?) && %w(2.4.1 2.4.0 2.3.5 2.3.1 2.3.0 2.1.1 2.1.0).include?(row['version'])
           keen_date = DateTime.strptime(row['keen']['timestamp'], '%Y-%m-%dT%H:%M:%S.%LZ')
 
           u_device = UniqueDevice.find_by(device_id: row['userID'])
@@ -171,7 +202,7 @@ class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
         ldl.last_keen_date = DateTime.strptime(googlePlayInfo.last['keen']['timestamp'], DATE_FORMAT)
         ldl.save!
       end
-    end while googlePlayInfo.size > 0
+    end while end_date_s < now_date
     puts "END PROCESS: #{PROCESS_3}"
 
     #Devices that didnt use Google Play

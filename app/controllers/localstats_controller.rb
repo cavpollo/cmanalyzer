@@ -10,12 +10,12 @@ class LocalstatsController < ApplicationController
   end
 
   def devices_data
-    min_brand_count = 10
+    min_brand_count = 20
     brands_count = UniqueDevice.group(:device_brand).order(:device_brand).count()
     brands = brands_count.reject { |key, value| value <= min_brand_count }
     brands["Other (less than #{min_brand_count})"] = brands_count.reject { |key, value| value > min_brand_count }.collect{ |key, value| value }.sum
-    
-    min_model_count = 10
+
+    min_model_count = 14
     models_count = UniqueDevice.group(:device_model).order(:device_model).count()
     models = models_count.reject { |key, value| value <= min_model_count }
     models["Other (less than #{min_model_count})"] = models_count.reject { |key, value| value > min_model_count }.collect{ |key, value| value }.sum
