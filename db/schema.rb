@@ -18,7 +18,7 @@ ActiveRecord::Schema.define(version: 20150904000004) do
 
   create_table "last_data_loads", force: :cascade do |t|
     t.string   "process_name",   null: false
-    t.string   "last_keen_date", null: false
+    t.datetime "last_keen_date", null: false
     t.string   "last_keen_id",   null: false
     t.datetime "created_at",     null: false
     t.datetime "updated_at",     null: false

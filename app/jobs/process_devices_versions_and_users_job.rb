@@ -1,5 +1,3 @@
-require 'csv'
-
 class ProcessDevicesVersionsAndUsersJob < ActiveJob::Base
   queue_as :default
 
