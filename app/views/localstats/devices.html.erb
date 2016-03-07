@@ -19,6 +19,14 @@
         <div class="panel-heading" style="font-size: 26px; font-weight: bold;">
           Cellphone Models All Users
         </div>
+        <div>
+          <select id="chart02-select">
+            <option value="">All</option>
+            <% @brands.each do |key, value| %>
+            <option value="<%= key %>"><%= "#{key} (#{value})" %></option>
+            <% end %>
+          </select>
+        </div>
         <div id="chart02" class="panel-body chart">
 
         </div>
