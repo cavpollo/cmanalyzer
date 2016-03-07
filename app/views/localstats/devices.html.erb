@@ -2,12 +2,25 @@
 
 <div class="container-fluid">
   <div class="row">
-    <div class="col-md-12 col-sm-12">
+    <div class="col-md-6 col-sm-12">
+      <div class="panel panel-default">
+        <div class="panel-heading" style="font-size: 26px; font-weight: bold;">
+          Total Devices
+        </div>
+        <div id="chart01" class="panel-body chart" data-total="<%= @brands_count %>">
+          <div style="background-color: #49c5b1; border-radius: 8px; text-align: center; padding: 10px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #fff;">
+            <span class="chart-count" style="font-size:84px; font-weight: 700; line-height: 84px; display: block;">#</span>
+            <span class="chart-title" style="font-size:24px; font-weight: 200; display: block;">Title</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-sm-12">
       <div class="panel panel-default">
         <div class="panel-heading" style="font-size: 26px; font-weight: bold;">
           Cellphone Brand All Users
         </div>
-        <div id="chart01" class="panel-body chart">
+        <div id="chart02" class="panel-body chart">
 
         </div>
       </div>
@@ -20,14 +33,14 @@
           Cellphone Models All Users
         </div>
         <div>
-          <select id="chart02-select">
+          <select id="chart03-select">
             <option value="">All</option>
             <% @brands.each do |key, value| %>
             <option value="<%= key %>"><%= "#{key} (#{value})" %></option>
             <% end %>
           </select>
         </div>
-        <div id="chart02" class="panel-body chart">
+        <div id="chart03" class="panel-body chart">
 
         </div>
       </div>

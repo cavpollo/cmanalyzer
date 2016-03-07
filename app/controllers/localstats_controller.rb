@@ -11,6 +11,8 @@ class LocalstatsController < ApplicationController
   end
 
   def devices
+    @brands_count = UniqueDevice.count()
+
     min_brand_count = 40
     brands_count = UniqueDevice.group(:device_brand).order(:device_brand).count()
     @brands = brands_count.reject { |key, value| value <= min_brand_count || key.empty? }
@@ -21,7 +23,6 @@ class LocalstatsController < ApplicationController
     brands_count = UniqueDevice.group(:device_brand).order(:device_brand).count()
     brands = brands_count.reject { |key, value| value <= min_brand_count }
     brands["Other (<= #{min_brand_count})"] = brands_count.reject { |key, value| value > min_brand_count }.collect{ |key, value| value }.sum
-
 
     if params[:brand].nil? || params[:brand].empty?
       min_percentage = 3/100.0 #7.5%

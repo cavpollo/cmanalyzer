@@ -8,29 +8,29 @@ ready = function() {
     //#\---------------------------------------/
 
     if ($('body.localstats.devices').length) {
+        drawTotalBlock('#chart01', $('#chart01').attr('data-total'), 'Total Unique Devices')
         models_ajax();
-        $('#chart02-select').on('change', function(){models_ajax()});
+        $('#chart03-select').on('change', function(){models_ajax()});
     }
 };
 
 refresh_graphs = function() {
     if ($('body.localstats.devices').length){
-        drawPieGraph('#chart01', devices_data['brands']);
-        drawPieGraph('#chart02', devices_data['models']);
+        drawPieGraph('#chart02', devices_data['brands']);
+        drawPieGraph('#chart03', devices_data['models']);
     }
 };
 
 models_ajax = function(){
-    console.log($('#chart02-select').val());
 	$.ajax({
 		type: 'GET',
 		url: '/localstats/devices_data.json',
-		data: {brand: $('#chart02-select').val()},
+		data: {brand: $('#chart03-select').val()},
 		dataType: 'json',
 		success: function(result) {
             devices_data = result;
-            drawPieGraph('#chart01', devices_data['brands']);
-            drawPieGraph('#chart02', devices_data['models']);
+            drawPieGraph('#chart02', devices_data['brands']);
+            drawPieGraph('#chart03', devices_data['models']);
         },
 		error: function(error) {
             console.log('error');
@@ -93,8 +93,8 @@ drawPieGraph = function (element, dataset) {
 	var chartColumns = [];
 
     for (var key in dataset) {
-        chartColumns.push([key == '' ? 'UNKNOWN' : key, dataset[key]]);
-    };
+        chartColumns.push([(key == '' ? 'UNKNOWN' : key) + ' (' + dataset[key]+ ')', dataset[key]]);
+    }
 
 	c3.generate({
 		bindto: element,
@@ -122,9 +122,9 @@ drawPieGraph = function (element, dataset) {
 	});
 };
 
-drawTotalBlock = function(element, dataset) {
-    $(element + ' > div > span.chart-count').html(dataset['total']);
-    $(element + ' > div > span.chart-title').html(dataset['title']);
+drawTotalBlock = function(element, total, title) {
+    $(element + ' > div > span.chart-count').html(total);
+    $(element + ' > div > span.chart-title').html(title);
 };
 
 ///---------------------------------------\
