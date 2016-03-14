@@ -47,17 +47,27 @@ class LocalstatsController < ApplicationController
     start_date = Date.new(2014, 06, 03)
     now_date = Time.zone.now
     dates = []
-    values = []
+    first_plays = []
+    installs = []
+    upgrade = []
+    uninstall = []
+    # active = []
     while start_date < now_date
       dates << start_date.strftime('%Y-%m-%d')
-      values << (users_start_date[start_date] || 0)
+      first_plays << (users_start_date[start_date] || 0)
+
+      d_event = DailyEvent.find_by(event_date: start_date)
+      installs << (d_event ? d_event.install_count : 0)
+      upgrade << (d_event ? d_event.upgrade_count : 0)
+      uninstall << (d_event ? d_event.uninstall_count : 0)
+      # active << (d_event ? d_event.active_users_count : 0)
 
       start_date = start_date + 1.day
     end
 
     respond_to do |format|
       format.html { render :app_activity }
-      format.json { render json: {users_start_date: [dates, values]}, status: :ok }
+      format.json { render json: {users_start_date: [dates, first_plays, installs, upgrade, uninstall]}, status: :ok }
     end
   end
 end

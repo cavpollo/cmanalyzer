@@ -1,7 +1,61 @@
 var devices_data = null;
+var startDate = moment('03/06/2014', 'DD/MM/YYYY');
+var endDate = moment().add(1, 'days');
 
 ready = function() {
     d3.select(window).on('resize', refresh_graphs);
+
+    //#/---------------------------------------\
+    //#|               DATE                    |
+    //#\---------------------------------------/
+
+    $('#daterange span').html(moment('02/06/2014', 'DD/MM/YYYY').format('D/MM/YYYY') + ' - ' + moment().format('D/MM/YYYY'));
+
+    $('#daterange').daterangepicker({
+        format: 'DD/MM/YYYY',
+        startDate: moment('02/06/2014', 'DD/MM/YYYY').format('D/MM/YYYY'),
+        endDate: moment().format('DD/MM/YYYY'),
+        minDate: '02/06/2014',
+        maxDate: moment().add(1, 'days').format('DD/MM/YYYY'),
+        dateLimit: {
+            years: 5
+        },
+        showDropdowns: true,
+        showWeekNumbers: false,
+        timePicker: false,
+        timePickerIncrement: 1,
+        timePicker12Hour: true,
+        ranges: {
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'Last 60 days': [moment().subtract(59, 'days'), moment()],
+            'Last 6 months': [moment().subtract(179, 'days'), moment()],
+            'Last year': [moment().subtract(365, 'days'), moment()]
+        },
+        opens: 'left',
+        drops: 'down',
+        buttonClasses: ['btn', 'btn-sm'],
+        applyClass: 'btn-primary',
+        cancelClass: 'btn-default',
+        separator: ' to ',
+        locale: {
+            applyLabel: 'Submit',
+            cancelLabel: 'Cancel',
+            fromLabel: 'From',
+            toLabel: 'To',
+            customRangeLabel: 'Custom',
+            daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+            monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            firstDay: 1
+        }
+    }, function(start, end, label) {});
+
+    $('#daterange').on('apply.daterangepicker', function(ev, picker) {
+        $('#daterange span').html(picker.startDate.format('D/MM/YYYY') + ' - ' + picker.endDate.format('D/MM/YYYY'));
+        startDate = picker.startDate;
+        endDate = picker.endDate.add(1, 'days');
+        refresh_graphs();
+    });
 
     //#/---------------------------------------\
     //#|               QUERIES                 |
@@ -23,7 +77,7 @@ refresh_graphs = function() {
         drawPieGraph('#chart03', devices_data['models']);
     }
     if ($('body.localstats.app_activity').length){
-        drawLineGraph('#chart01', devices_data['users_start_date']);
+        drawLineGraph('#chart01', devices_data['users_start_date'], ['x', 'First Plays', 'Installs', 'Upgrades', 'Uninstalls']);
     }
 };
 
@@ -52,13 +106,15 @@ app_activity_ajax  = function(){
         dataType: 'json',
         success: function(result) {
             devices_data = result;
-            drawLineGraph('#chart01', devices_data['users_start_date'], ['x', 'New Users']);
+            drawLineGraph('#chart01', devices_data['users_start_date'], ['x', 'First Plays', 'Installs', 'Upgrades', 'Uninstalls']);
         },
         error: function(error) {
             console.log('error');
         }
     })
 };
+
+
 
 
 //#/---------------------------------------\
@@ -146,15 +202,28 @@ drawPieGraph = function (element, dataset) {
 
 drawLineGraph = function (element, datasets, names) {
     var columns = [];
+
     var i=0;
     while (datasets.length > i) {
-        datasets[i].unshift(names[i]);
-        columns.push(datasets[i]);
+        columns.push([names[i]].concat(datasets[i]));
         i++;
     }
 
+    var j = 1;
+    while (columns[0].length > j) {
+        if(startDate > moment(columns[0][j], 'YYYY-MM-DD') || moment(columns[0][j], 'YYYY-MM-DD') > endDate) {
+            i = 0;
+            while (columns.length > i) {
+                columns[i].splice(j, 1);
+                i++;
+            }
+        } else {
+            j++;
+        }
+    }
+
     //Vertical Date Checkpoints
-    var chart_key_points = []
+    var chart_key_points = [];
     chart_key_points.push({value: '2016-02-29', text: 'FB Ads End'});
     chart_key_points.push({value: '2016-02-20', text: 'FB Ads Start'});
     chart_key_points.push({value: '2015-05-14', text: 'TV Show Tuti (FB Ads End)'}); //8PM, also 2015-05-15 12PM
@@ -185,7 +254,7 @@ drawLineGraph = function (element, datasets, names) {
             y: {
                 label: {
                     position: 'outer-middle',
-                    text: 'New Users'
+                    text: 'Total'
                 }
             }
         },

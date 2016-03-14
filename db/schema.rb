@@ -11,10 +11,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150904000004) do
+ActiveRecord::Schema.define(version: 20160313000000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "daily_events", force: :cascade do |t|
+    t.date     "event_date",                     null: false
+    t.integer  "install_count",      default: 0, null: false
+    t.integer  "upgrade_count",      default: 0, null: false
+    t.integer  "uninstall_count",    default: 0, null: false
+    t.integer  "active_users_count", default: 0, null: false
+    t.datetime "created_at",                     null: false
+    t.datetime "updated_at",                     null: false
+  end
 
   create_table "last_data_loads", force: :cascade do |t|
     t.string   "process_name",   null: false
