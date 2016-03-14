@@ -3,13 +3,6 @@ class LocalstatsController < ApplicationController
 
   end
 
-  def app_access
-  end
-
-  def app_access_data
-
-  end
-
   def devices
     @brands_count = UniqueDevice.count()
 
@@ -41,6 +34,30 @@ class LocalstatsController < ApplicationController
     respond_to do |format|
       format.html { render :devices }
       format.json { render json: {brands: brands, models: models}, status: :ok }
+    end
+  end
+
+  def app_activity
+
+  end
+
+  def app_activity_data
+    users_start_date = UniqueDevice.order('DATE(first_play_date)').group('DATE(first_play_date)').count
+
+    start_date = Date.new(2014, 06, 03)
+    now_date = Time.zone.now
+    dates = []
+    values = []
+    while start_date < now_date
+      dates << start_date.strftime('%Y-%m-%d')
+      values << (users_start_date[start_date] || 0)
+
+      start_date = start_date + 1.day
+    end
+
+    respond_to do |format|
+      format.html { render :app_activity }
+      format.json { render json: {users_start_date: [dates, values]}, status: :ok }
     end
   end
 end

@@ -9,8 +9,11 @@ ready = function() {
 
     if ($('body.localstats.devices').length) {
         drawTotalBlock('#chart01', $('#chart01').attr('data-total'), 'Total Unique Devices')
-        models_ajax();
-        $('#chart03-select').on('change', function(){models_ajax()});
+        devices_ajax();
+        $('#chart03-select').on('change', function(){devices_ajax()});
+    }
+    if ($('body.localstats.app_activity').length) {
+        app_activity_ajax();
     }
 };
 
@@ -19,9 +22,12 @@ refresh_graphs = function() {
         drawPieGraph('#chart02', devices_data['brands']);
         drawPieGraph('#chart03', devices_data['models']);
     }
+    if ($('body.localstats.app_activity').length){
+        drawLineGraph('#chart01', devices_data['users_start_date']);
+    }
 };
 
-models_ajax = function(){
+devices_ajax = function(){
 	$.ajax({
 		type: 'GET',
 		url: '/localstats/devices_data.json',
@@ -33,6 +39,22 @@ models_ajax = function(){
             drawPieGraph('#chart03', devices_data['models']);
         },
 		error: function(error) {
+            console.log('error');
+        }
+    })
+};
+
+app_activity_ajax  = function(){
+    $.ajax({
+        type: 'GET',
+        url: '/localstats/app_activity_data.json',
+        data: {},
+        dataType: 'json',
+        success: function(result) {
+            devices_data = result;
+            drawLineGraph('#chart01', devices_data['users_start_date'], ['x', 'New Users']);
+        },
+        error: function(error) {
             console.log('error');
         }
     })
@@ -120,6 +142,68 @@ drawPieGraph = function (element, dataset) {
             }
         }
 	});
+};
+
+drawLineGraph = function (element, datasets, names) {
+    var columns = [];
+    var i=0;
+    while (datasets.length > i) {
+        datasets[i].unshift(names[i]);
+        columns.push(datasets[i]);
+        i++;
+    }
+
+    //Vertical Date Checkpoints
+    var chart_key_points = []
+    chart_key_points.push({value: '2016-02-29', text: 'FB Ads End'});
+    chart_key_points.push({value: '2016-02-20', text: 'FB Ads Start'});
+    chart_key_points.push({value: '2015-05-14', text: 'TV Show Tuti (FB Ads End)'}); //8PM, also 2015-05-15 12PM
+    //chart_key_points.push({value: '2015-05-14', text: 'End FB Ads'} #12:55... Too Crammed
+    chart_key_points.push({value: '2015-05-11', text: 'Start FB Ads'}); //13:17
+    chart_key_points.push({value: '2014-10-22', text: 'v2.4.1'});
+	//chart_key_points.push({value: '2014-10-22', text: 'v2.4.0'}); //Negiglible...
+	//chart_key_points.push({value: '2014-10-21', text: 'v2.3.5'}); //Mess up fixed day after
+    chart_key_points.push({value: '2014-09-14', text: 'v2.3.1'});
+	//chart_key_points.push({value: '2014-09-14', text: 'v2.3.0'}); //Negiglible...
+    chart_key_points.push({value: '2014-07-24', text: 'v2.1.1'});
+	//chart_key_points.push({value: '2014-07-24', text: 'v2.1.0'}); //Negiglible
+    chart_key_points.push({value: '2014-06-05', text: 'v1.1.0'}); //Stuck in flurry...
+    chart_key_points.push({value: '2014-06-03', text: 'v1.0.14'}); //Stuck in flurry...
+
+    c3.generate({
+        axis: {
+            x: {
+                label: {
+                    position: 'outer-center',
+                    text: 'date'
+                },
+                type: 'timeseries',
+                    tick: {
+                    format: '%d/%m/%Y'
+                }
+            },
+            y: {
+                label: {
+                    position: 'outer-middle',
+                    text: 'New Users'
+                }
+            }
+        },
+        bindto: element,
+        data: {
+            x: 'x',
+            columns: columns
+        },
+        grid: {
+            x: {
+                lines: chart_key_points
+            }
+        },
+        size: {
+            height: $(element).height(),
+            width: $(element).width()
+        }
+    });
 };
 
 drawTotalBlock = function(element, total, title) {
