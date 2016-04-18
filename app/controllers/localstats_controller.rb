@@ -43,18 +43,33 @@ class LocalstatsController < ApplicationController
 
   def app_activity_data
     users_start_date = UniqueDevice.order('DATE(first_play_date)').group('DATE(first_play_date)').count
+    users_last_date = UniqueDevice.order('DATE(last_play_date)').group('DATE(last_play_date)').count
+    users_firstlast_date = UniqueDevice.where('first_play_date = last_play_date').order('DATE(last_play_date)').group('DATE(last_play_date)').count
 
     start_date = Date.new(2014, 06, 03)
     now_date = Time.zone.now
     dates = []
     first_plays = []
+    last_plays = []
+    firstlast_plays = []
     installs = []
     upgrade = []
     uninstall = []
     # active = []
+
+    # daily_array = []
+    # week_number = -1
+    # week_count = 0
+    # weekly_array = []
+    # month_number = -1
+    # month_count = 0
+    # monthly_array = []
+
     while start_date < now_date
       dates << start_date.strftime('%Y-%m-%d')
       first_plays << (users_start_date[start_date] || 0)
+      last_plays << (users_last_date[start_date] || 0)
+      firstlast_plays << (users_firstlast_date[start_date] || 0)
 
       d_event = DailyEvent.find_by(event_date: start_date)
       installs << (d_event ? d_event.install_count : 0)
@@ -62,12 +77,43 @@ class LocalstatsController < ApplicationController
       uninstall << (d_event ? d_event.uninstall_count : 0)
       # active << (d_event ? d_event.active_users_count : 0)
 
+      # daily_array << (d_event ? d_event.install_count : 0)
+      # if week_number != start_date.cweek
+      #   week_count = week_count + (d_event ? d_event.install_count : 0)
+      # else
+      #   weekly_array << week_count
+      #   week_count = 0
+      # end
+      # if month_number != start_date.month
+      #   month_count = month_count + (d_event ? d_event.install_count : 0)
+      # else
+      #   monthly_array << month_count
+      #   month_count = 0
+      # end
+
       start_date = start_date + 1.day
     end
 
+    users_days_of_use = ActiveRecord::Base.connection.execute('SELECT days_of_use, COUNT(*) AS count FROM
+        (SELECT (last_play_date - first_play_date + 1) AS days_of_use FROM unique_devices) my_table
+      GROUP BY days_of_use
+      ORDER BY days_of_use ASC;').map { |r| [r['days_of_use'].to_i, r['count'].to_i, r['days_of_use'].to_i == 1 ? 0 : r['count'].to_i] }
+
+    users_days_of_use_list = ActiveRecord::Base.connection.execute('SELECT (last_play_date - first_play_date + 1) AS days_of_use FROM unique_devices WHERE (last_play_date - first_play_date + 1) > 1 ORDER BY days_of_use ASC;').collect { |r| r['days_of_use'].to_i }
+    users_median_days_of_use = (users_days_of_use_list[(users_days_of_use_list.length - 1) / 2] + users_days_of_use_list[users_days_of_use_list.length / 2]) / 2.0
+    users_average_days_of_use = ActiveRecord::Base.connection.execute('SELECT AVG(last_play_date - first_play_date + 1) AS count FROM unique_devices;').collect { |r| r['count'].to_i }
+    users_above_average_days_of_use = ActiveRecord::Base.connection.execute("SELECT COUNT(*) AS count FROM unique_devices WHERE (last_play_date - first_play_date + 1) > #{users_average_days_of_use[0]};").collect { |r| r['count'].to_i }
+
+    # daily_average = daily_array.inject(:+).to_f / daily_array.size
+    # weekly_average = weekly_array.inject(:+).to_f / weekly_array.size
+    # monthly_average = monthly_array.inject(:+).to_f / monthly_array.size
+
     respond_to do |format|
       format.html { render :app_activity }
-      format.json { render json: {users_start_date: [dates, first_plays, installs, upgrade, uninstall]}, status: :ok }
+      format.json { render json: {users_start_date: [dates, first_plays, last_plays, firstlast_plays, installs, upgrade, uninstall],
+                                  users_day_of_use: users_days_of_use, users_average_days_of_use: users_average_days_of_use[0],
+                                  users_above_average_days_of_use: users_above_average_days_of_use[0], users_median_days_of_use: users_median_days_of_use}, status: :ok }
+                                  # daily_average: daily_average, weekly_average: weekly_average, monthly_average: monthly_average}
     end
   end
 end

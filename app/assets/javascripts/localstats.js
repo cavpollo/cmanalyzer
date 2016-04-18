@@ -77,7 +77,11 @@ refresh_graphs = function() {
         drawPieGraph('#chart03', devices_data['models']);
     }
     if ($('body.localstats.app_activity').length){
-        drawLineGraph('#chart01', devices_data['users_start_date'], ['x', 'First Plays', 'Installs', 'Upgrades', 'Uninstalls']);
+        drawLineGraph('#chart01', devices_data['users_start_date'], ['Fecha', 'Total de Usuarios'], ['Fecha', 'First Plays', 'Last Plays', '1 Day Players', 'Installs', 'Upgrades', 'Uninstalls']);
+        drawBarGraph('#chart02', devices_data['users_day_of_use'], ['Dias de Uso', 'Total de Usuarios'], ['# de Dias de Uso', 'Dias Uso', 'Dias Uso Sin 1er Dia'], true);
+        drawTotalBlock('#chart03', devices_data['users_average_days_of_use'], 'Dias de Uso Promedio');
+        drawTotalBlock('#chart04', devices_data['users_above_average_days_of_use'], 'Usuarios por encima de Uso Promedio');
+        drawTotalBlock('#chart05', devices_data['users_median_days_of_use'], 'Dias de Uso Mediana (Sin 1er Dia)');
     }
 };
 
@@ -106,7 +110,11 @@ app_activity_ajax  = function(){
         dataType: 'json',
         success: function(result) {
             devices_data = result;
-            drawLineGraph('#chart01', devices_data['users_start_date'], ['x', 'First Plays', 'Installs', 'Upgrades', 'Uninstalls']);
+            drawLineGraph('#chart01', devices_data['users_start_date'], ['Fecha', 'Total de Usuarios'], ['Fecha', 'First Plays', 'Last Plays', '1 Day Players', 'Installs', 'Upgrades', 'Uninstalls']);
+            drawBarGraph('#chart02', devices_data['users_day_of_use'], ['Dias de Uso', 'Total de Usuarios'], ['# de Dias de Uso', 'Dias Uso', 'Dias Uso Sin 1er Dia'], true);
+            drawTotalBlock('#chart03', devices_data['users_average_days_of_use'], 'Dias de Uso Promedio');
+            drawTotalBlock('#chart04', devices_data['users_above_average_days_of_use'], 'Usuarios por encima de Uso Promedio');
+            drawTotalBlock('#chart05', devices_data['users_median_days_of_use'], 'Dias de Uso Mediana (Sin 1er Dia)');
         },
         error: function(error) {
             console.log('error');
@@ -121,28 +129,50 @@ app_activity_ajax  = function(){
 //#|                GRAPHS                 |
 //#\---------------------------------------/
 
-drawBarGraph = function(element, dataset) {
+drawBarGraph = function(element, dataset, axis, names, legend) {
     var chartColumns = [];
     var chartColumnData = [];
     var chartColumnNames = [];
 
-    chartColumnNames.push('x');
-    chartColumnData.push('data');
+    chartColumnNames.push(names[0]);
+    var j = 0;
+    while (j+1 < names.length) {
+        chartColumnData[j] = [names[j+1]];
+        j++;
+    }
 
     var i = 0;
     while (i < dataset.length) {
         chartColumnNames.push(dataset[i][0]);
-        chartColumnData.push(dataset[i][1]);
+        var j = 0;
+        while (j+1 < names.length) {
+            chartColumnData[j].push(dataset[i][j+1]);
+            j++;
+        }
         i++;
     }
 
     chartColumns.push(chartColumnNames);
-    chartColumns.push(chartColumnData);
+    var j = 0;
+    while (j+1 < names.length) {
+        chartColumns.push(chartColumnData[j]);
+        j++;
+    }
 
     c3.generate({
         axis: {
             x: {
+                label: {
+                    position: 'outer-center',
+                    text: names[0]
+                },
                 type: 'category'
+            },
+            y: {
+                label: {
+                    position: 'outer-middle',
+                    text: 'Total'
+                }
             }
         },
         bar: {
@@ -152,13 +182,13 @@ drawBarGraph = function(element, dataset) {
         },
         bindto: element,
         data: {
-            x: 'x',
+            x: names[0],
             columns: chartColumns,
-            groups: [['data']],
+            groups: [names.splice(0, 1)],
             type: 'bar'
         },
         legend: {
-            show: false
+            show: legend
         },
         size: {
             height: $(element).height(),
@@ -200,7 +230,7 @@ drawPieGraph = function (element, dataset) {
 	});
 };
 
-drawLineGraph = function (element, datasets, names) {
+drawLineGraph = function (element, datasets, axis, names) {
     var columns = [];
 
     var i=0;
@@ -244,7 +274,7 @@ drawLineGraph = function (element, datasets, names) {
             x: {
                 label: {
                     position: 'outer-center',
-                    text: 'date'
+                    text: axis[0]
                 },
                 type: 'timeseries',
                     tick: {
@@ -254,13 +284,13 @@ drawLineGraph = function (element, datasets, names) {
             y: {
                 label: {
                     position: 'outer-middle',
-                    text: 'Total'
+                    text: axis[1]
                 }
             }
         },
         bindto: element,
         data: {
-            x: 'x',
+            x: axis[0],
             columns: columns
         },
         grid: {
