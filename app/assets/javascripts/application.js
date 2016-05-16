@@ -20,3 +20,4 @@
 //= require moment.min
 //= require daterangepicker
 //= require c3.min
+//= require canvasjs.min

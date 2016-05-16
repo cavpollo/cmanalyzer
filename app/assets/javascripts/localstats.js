@@ -62,12 +62,15 @@ ready = function() {
     //#\---------------------------------------/
 
     if ($('body.localstats.devices').length) {
-        drawTotalBlock('#chart01', $('#chart01').attr('data-total'), 'Total Unique Devices')
+        drawTotalBlock('#chart01', $('#chart01').attr('data-total'), 'Total Unique Devices');
         devices_ajax();
         $('#chart03-select').on('change', function(){devices_ajax()});
     }
     if ($('body.localstats.app_activity').length) {
         app_activity_ajax();
+    }
+    if ($('body.localstats.loss_activity').length) {
+        loss_activity_ajax();
     }
 };
 
@@ -78,10 +81,18 @@ refresh_graphs = function() {
     }
     if ($('body.localstats.app_activity').length){
         drawLineGraph('#chart01', devices_data['users_start_date'], ['Fecha', 'Total de Usuarios'], ['Fecha', 'First Plays', 'Last Plays', '1 Day Players', 'Installs', 'Upgrades', 'Uninstalls']);
-        drawBarGraph('#chart02', devices_data['users_day_of_use'], ['Dias de Uso', 'Total de Usuarios'], ['# de Dias de Uso', 'Dias Uso', 'Dias Uso Sin 1er Dia'], true);
+        drawBarGraph('#chart02', devices_data['users_day_of_use'], ['# de Dias de Uso', 'Dias Uso', 'Dias Uso Sin 1er Dia'], true);
         drawTotalBlock('#chart03', devices_data['users_average_days_of_use'], 'Dias de Uso Promedio');
         drawTotalBlock('#chart04', devices_data['users_above_average_days_of_use'], 'Usuarios por encima de Uso Promedio');
         drawTotalBlock('#chart05', devices_data['users_median_days_of_use'], 'Dias de Uso Mediana (Sin 1er Dia)');
+    }
+    if ($('body.localstats.loss_activity').length) {
+        drawBarGraph('#chart01', devices_data['ratio_count'], ['Densidad de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
+        drawScatterGraph('chart02', devices_data['ratio_vs_days_of_use'], ['Densidad de Pantalla', 'Dias de uso']);
+        drawBarGraph('#chart03', devices_data['prop_count'], ['Proporcion de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
+        drawScatterGraph('chart04', devices_data['prop_vs_days_of_use'], ['Proporcion de Pantalla', 'Dias de Uso']);
+        drawBarGraph('#chart05', devices_data['h_count'], ['Altura de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
+        drawScatterGraph('chart06', devices_data['h_vs_days_of_use'], ['Altura de Pantalla', 'Dias de Uso']);
     }
 };
 
@@ -111,7 +122,7 @@ app_activity_ajax  = function(){
         success: function(result) {
             devices_data = result;
             drawLineGraph('#chart01', devices_data['users_start_date'], ['Fecha', 'Total de Usuarios'], ['Fecha', 'First Plays', 'Last Plays', '1 Day Players', 'Installs', 'Upgrades', 'Uninstalls']);
-            drawBarGraph('#chart02', devices_data['users_day_of_use'], ['Dias de Uso', 'Total de Usuarios'], ['# de Dias de Uso', 'Dias Uso', 'Dias Uso Sin 1er Dia'], true);
+            drawBarGraph('#chart02', devices_data['users_day_of_use'], ['# de Dias de Uso', 'Dias Uso', 'Dias Uso Sin 1er Dia'], true);
             drawTotalBlock('#chart03', devices_data['users_average_days_of_use'], 'Dias de Uso Promedio');
             drawTotalBlock('#chart04', devices_data['users_above_average_days_of_use'], 'Usuarios por encima de Uso Promedio');
             drawTotalBlock('#chart05', devices_data['users_median_days_of_use'], 'Dias de Uso Mediana (Sin 1er Dia)');
@@ -122,14 +133,97 @@ app_activity_ajax  = function(){
     })
 };
 
-
+loss_activity_ajax  = function(){
+    $.ajax({
+        type: 'GET',
+        url: '/localstats/loss_activity_data.json',
+        data: {},
+        dataType: 'json',
+        success: function(result) {
+            devices_data = result;
+            drawBarGraph('#chart01', devices_data['ratio_count'], ['Densidad de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
+            drawScatterGraph('chart02', devices_data['ratio_vs_days_of_use'], ['Densidad de Pantalla', 'Dias de Uso']);
+            drawBarGraph('#chart03', devices_data['prop_count'], ['Proporcion de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
+            drawScatterGraph('chart04', devices_data['prop_vs_days_of_use'], ['Proporcion de Pantalla', 'Dias de Uso']);
+            drawBarGraph('#chart05', devices_data['h_count'], ['Altura de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
+            drawScatterGraph('chart06', devices_data['h_vs_days_of_use'], ['Altura de Pantalla', 'Dias de Uso']);
+        },
+        error: function(error) {
+            console.log('error');
+        }
+    })
+};
 
 
 //#/---------------------------------------\
 //#|                GRAPHS                 |
 //#\---------------------------------------/
 
-drawBarGraph = function(element, dataset, axis, names, legend) {
+drawScatterGraph = function (element, dataset, axis){
+    var chart = new CanvasJS.Chart(element, {
+        zoomEnabled: true,
+        animationEnabled: true,
+        axisX: {
+            title: axis[0],
+            //minimum: 0.5,
+            //labelAngle: -40,
+            //maximum: 4.1,
+            labelFontSize: 14,
+            titleFontSize: 18
+        },
+        axisY:{
+            title: axis[1],
+            //valueFormatString: "$#,##0k",
+            lineThickness: 2,
+            labelFontSize: 14,
+            titleFontSize: 18
+        },
+        data: [
+            {
+                type: 'bubble',
+                toolTipContent: '<span style="color: {color};"><strong>{z} personas</strong></span><br/><strong>'+axis[0]+'</strong> {x} <br/> <strong>'+axis[1]+'</strong> {y}',
+                dataPoints: dataset
+            }
+
+        ]
+    });
+
+    chart.render();
+};
+
+drawCandleGraph = function (element, dataset){
+    //Open, High, Low, Close
+
+    // --- High
+    //  |
+    // ___ Open
+    // | |
+    // | |
+    // L__ Close
+    //  |
+    // --- Low
+
+    var chart = new CanvasJS.Chart(element,
+        {
+            axisY: {
+                includeZero: false,
+                //prefix: "$",
+            },
+            axisX: {
+                //valueFormatString: "DD-MMM",
+            },
+            data: [
+                {
+                    type: "candlestick",
+                    dataPoints: dataset
+                }
+            ]
+        });
+
+    chart.render();
+};
+
+drawBarGraph = function(element, dataset, names, legend) {
     var chartColumns = [];
     var chartColumnData = [];
     var chartColumnNames = [];

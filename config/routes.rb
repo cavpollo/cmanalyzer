@@ -19,6 +19,8 @@ Rails.application.routes.draw do
   get 'localstats/devices_data' => 'localstats#devices_data'
   get 'localstats/app_activity' => 'localstats#app_activity'
   get 'localstats/app_activity_data' => 'localstats#app_activity_data'
+  get 'localstats/loss_activity' => 'localstats#loss_activity'
+  get 'localstats/loss_activity_data' => 'localstats#loss_activity_data'
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

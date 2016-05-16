@@ -116,4 +116,49 @@ class LocalstatsController < ApplicationController
                                   # daily_average: daily_average, weekly_average: weekly_average, monthly_average: monthly_average}
     end
   end
+
+  def loss_activity
+    #To generate lists for correlation stuff...
+
+    # query = 'SELECT device_height / device_width AS prop, (last_play_date - first_play_date + 1) AS days_of_use
+    # FROM unique_devices
+    # WHERE (last_play_date - first_play_date) > 3
+    # ORDER BY days_of_use ASC, prop ASC;'
+    # ratio_count = ActiveRecord::Base.connection.execute(query).collect { |r| [r['prop'].to_f, r['days_of_use'].to_i] }
+    # puts ratio_count.inspect
+    # puts ratio_count.transpose.inspect
+
+    # query = 'SELECT device_height, (last_play_date - first_play_date + 1) AS days_of_use
+    # FROM unique_devices
+    # WHERE (last_play_date - first_play_date) > 65
+    # ORDER BY days_of_use ASC, prop ASC;'
+    # h_count = ActiveRecord::Base.connection.execute(query).collect { |r| [r['prop'].to_f, r['device_height'].to_i] }
+    # puts h_count.inspect
+    # puts h_count.transpose.inspect
+  end
+
+  def loss_activity_data
+    query = 'SELECT A.device_density, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.device_density = A.device_density AND (last_play_date - first_play_date) = 0) AS count_one_day FROM unique_devices AS A GROUP BY A.device_density ORDER BY A.device_density ASC;'
+    ratio_count = ActiveRecord::Base.connection.execute(query).map { |r| [r['device_density'], r['count'].to_i, r['count_one_day'].to_i] }
+
+    query = 'SELECT device_density, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices GROUP BY days_of_use, device_density ORDER BY days_of_use ASC, device_density ASC;'
+    ratio_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['device_density'].to_f, y: r['days_of_use'].to_i, z: r['count'].to_i} }
+
+    query = 'SELECT A.prop, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE (B.device_height / B.device_width) = A.prop AND (last_play_date - first_play_date) = 0) AS count_one_day FROM (SELECT device_height / device_width AS prop FROM unique_devices) AS A GROUP BY A.prop ORDER BY A.prop ASC;'
+    prop_count = (ActiveRecord::Base.connection.execute(query).collect { |r| [r['prop'].to_f.round(4), r['count'].to_i, r['count_one_day'].to_i] if r['count'].to_i > 6 }).compact
+
+    query = 'SELECT device_height / device_width AS prop, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE (device_height / device_width) >= 1 GROUP BY days_of_use, prop ORDER BY days_of_use ASC, prop ASC;'
+    prop_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['prop'].to_f.round(4), y: r['days_of_use'].to_i, z: r['count'].to_i} }
+
+    query = 'SELECT A.device_height, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.device_height = A.device_height AND (last_play_date - first_play_date) = 0) AS count_one_day FROM unique_devices AS A GROUP BY A.device_height ORDER BY A.device_height ASC;'
+    h_count = (ActiveRecord::Base.connection.execute(query).collect { |r| [r['device_height'].to_f.round(4), r['count'].to_i, r['count_one_day'].to_i] if r['count'].to_i > 6 }).compact
+
+    query = 'SELECT device_height, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE (device_height / device_width) >= 1 GROUP BY days_of_use, device_height ORDER BY days_of_use ASC, device_height ASC;'
+    h_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['device_height'].to_f.round(4), y: r['days_of_use'].to_i, z: r['count'].to_i} }
+
+    respond_to do |format|
+      format.html { render :loss_activity }
+      format.json { render json: {ratio_count: ratio_count, ratio_vs_days_of_use: ratio_vs_days_of_use, prop_count: prop_count, prop_vs_days_of_use: prop_vs_days_of_use, h_count: h_count, h_vs_days_of_use: h_vs_days_of_use}, status: :ok }
+    end
+  end
 end
