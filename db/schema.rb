@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160524000004) do
+ActiveRecord::Schema.define(version: 20160525000000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -49,7 +49,6 @@ ActiveRecord::Schema.define(version: 20160524000004) do
     t.datetime "updated_at",                     null: false
     t.string   "device_brand",    default: "",   null: false
     t.string   "device_name",     default: "",   null: false
-    t.boolean  "valid",           default: true, null: false
     t.boolean  "valid_device",    default: true, null: false
   end
 
@@ -72,6 +71,14 @@ ActiveRecord::Schema.define(version: 20160524000004) do
     t.date     "last_play_date",   null: false
     t.datetime "created_at",       null: false
     t.datetime "updated_at",       null: false
+  end
+
+  create_table "user_screen_days", force: :cascade do |t|
+    t.string   "screen_name",              null: false
+    t.integer  "day",          default: 0, null: false
+    t.integer  "access_count", default: 0, null: false
+    t.datetime "created_at",               null: false
+    t.datetime "updated_at",               null: false
   end
 
   create_table "user_screen_events", force: :cascade do |t|

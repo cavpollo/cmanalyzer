@@ -138,27 +138,79 @@ class LocalstatsController < ApplicationController
   end
 
   def loss_activity_data
-    query = 'SELECT A.device_density, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.device_density = A.device_density AND (last_play_date - first_play_date) = 0) AS count_one_day FROM unique_devices AS A GROUP BY A.device_density ORDER BY A.device_density ASC;'
+    query = 'SELECT A.device_density, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.valid_device = TRUE AND B.device_density = A.device_density AND (last_play_date - first_play_date) = 0) AS count_one_day FROM unique_devices AS A GROUP BY A.device_density ORDER BY A.device_density ASC;'
     ratio_count = ActiveRecord::Base.connection.execute(query).map { |r| [r['device_density'], r['count'].to_i, r['count_one_day'].to_i] }
 
     query = 'SELECT device_density, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices GROUP BY days_of_use, device_density ORDER BY days_of_use ASC, device_density ASC;'
     ratio_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['device_density'].to_f, y: r['days_of_use'].to_i, z: r['count'].to_i} }
 
-    query = 'SELECT A.prop, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE (B.device_height / B.device_width) = A.prop AND (last_play_date - first_play_date) = 0) AS count_one_day FROM (SELECT device_height / device_width AS prop FROM unique_devices) AS A GROUP BY A.prop ORDER BY A.prop ASC;'
+    query = 'SELECT A.prop, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.valid_device = TRUE AND (B.device_height / B.device_width) = A.prop AND (last_play_date - first_play_date) = 0) AS count_one_day FROM (SELECT device_height / device_width AS prop FROM unique_devices WHERE valid_device = TRUE) AS A GROUP BY A.prop ORDER BY A.prop ASC;'
     prop_count = (ActiveRecord::Base.connection.execute(query).collect { |r| [r['prop'].to_f.round(4), r['count'].to_i, r['count_one_day'].to_i] if r['count'].to_i > 6 }).compact
 
-    query = 'SELECT device_height / device_width AS prop, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE (device_height / device_width) >= 1 GROUP BY days_of_use, prop ORDER BY days_of_use ASC, prop ASC;'
+    query = 'SELECT device_height / device_width AS prop, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE valid_device = TRUE AND (device_height / device_width) >= 1 GROUP BY days_of_use, prop ORDER BY days_of_use ASC, prop ASC;'
     prop_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['prop'].to_f.round(4), y: r['days_of_use'].to_i, z: r['count'].to_i} }
 
-    query = 'SELECT A.device_height, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.device_height = A.device_height AND (last_play_date - first_play_date) = 0) AS count_one_day FROM unique_devices AS A GROUP BY A.device_height ORDER BY A.device_height ASC;'
+    query = 'SELECT A.device_height, COUNT(A.*) AS count, (SELECT COUNT(*) FROM unique_devices AS B WHERE B.valid_device = TRUE AND B.device_height = A.device_height AND (last_play_date - first_play_date) = 0) AS count_one_day FROM unique_devices AS A GROUP BY A.device_height ORDER BY A.device_height ASC;'
     h_count = (ActiveRecord::Base.connection.execute(query).collect { |r| [r['device_height'].to_f.round(4), r['count'].to_i, r['count_one_day'].to_i] if r['count'].to_i > 6 }).compact
 
-    query = 'SELECT device_height, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE (device_height / device_width) >= 1 GROUP BY days_of_use, device_height ORDER BY days_of_use ASC, device_height ASC;'
+    query = 'SELECT device_height, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE valid_device = TRUE AND (device_height / device_width) >= 1 GROUP BY days_of_use, device_height ORDER BY days_of_use ASC, device_height ASC;'
     h_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['device_height'].to_f.round(4), y: r['days_of_use'].to_i, z: r['count'].to_i} }
+
+    query = 'SELECT Z.days, avg(Z.access_count) AS average FROM (SELECT (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name = \'MenuScreen\') Z GROUP BY Z.days ORDER BY Z.days ASC;'
+    screen_menu = ActiveRecord::Base.connection.execute(query).map { |r| [r['days'].to_i, r['average'].to_f.round(4)] }
+
+    query = 'SELECT Z.days, avg(Z.access_count) AS average FROM (SELECT (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name = \'HelpScreen\') Z GROUP BY Z.days ORDER BY Z.days ASC;'
+    screen_help = ActiveRecord::Base.connection.execute(query).map { |r| [r['days'].to_i, r['average'].to_f.round(4)] }
+
+    query = 'SELECT Z.days, avg(Z.access_count) AS average FROM (SELECT (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name = \'StatScreen\') Z GROUP BY Z.days ORDER BY Z.days ASC;'
+    screen_stat = ActiveRecord::Base.connection.execute(query).map { |r| [r['days'].to_i, r['average'].to_f.round(4)] }
+
+    query = 'SELECT Z.days, avg(Z.access_count) AS average FROM (SELECT (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name = \'ShopScreen\') Z GROUP BY Z.days ORDER BY Z.days ASC;'
+    screen_shop = ActiveRecord::Base.connection.execute(query).map { |r| [r['days'].to_i, r['average'].to_f.round(4)] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'CreditScreen\' ORDER BY day ASC;'
+    days_cred = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'PhotoScreen\' ORDER BY day ASC;'
+    days_phot = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'HelpScreen\' ORDER BY day ASC;'
+    days_help = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'StatScreen\' ORDER BY day ASC;'
+    days_stat = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'ShopScreen\' AND day <= 150 ORDER BY day ASC;'
+    days_shop = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'Achievements\' ORDER BY day ASC;'
+    days_achi = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'Leaderboards\' ORDER BY day ASC;'
+    days_lead = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    # query = 'SELECT Z.screen_name, Z.days, avg(Z.access_count) AS average FROM (SELECT screen_name, (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name IN
+    # (\'StatScreen\',\'Leaderboards\',\'CreditScreen\',\'PhotoScreen\',\'ShopScreen\',\'Achievements\',\'HelpScreen\')) Z GROUP BY Z.screen_name, Z.days ORDER BY Z.screen_name ASC, Z.days ASC;'
 
     respond_to do |format|
       format.html { render :loss_activity }
-      format.json { render json: {ratio_count: ratio_count, ratio_vs_days_of_use: ratio_vs_days_of_use, prop_count: prop_count, prop_vs_days_of_use: prop_vs_days_of_use, h_count: h_count, h_vs_days_of_use: h_vs_days_of_use}, status: :ok }
+      format.json { render json: {ratio_count: ratio_count,
+                                  ratio_vs_days_of_use: ratio_vs_days_of_use,
+                                  prop_count: prop_count,
+                                  prop_vs_days_of_use: prop_vs_days_of_use,
+                                  h_count: h_count,
+                                  h_vs_days_of_use: h_vs_days_of_use,
+                                  screen_menu: screen_menu,
+                                  screen_help: screen_help,
+                                  screen_stat: screen_stat,
+                                  screen_shop: screen_shop,
+                                  days_cred: days_cred,
+                                  days_phot: days_phot,
+                                  days_help: days_help,
+                                  days_stat: days_stat,
+                                  days_shop: days_shop,
+                                  days_achi: days_achi,
+                                  days_lead: days_lead}, status: :ok }
     end
   end
 end
