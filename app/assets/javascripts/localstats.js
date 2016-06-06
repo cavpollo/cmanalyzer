@@ -93,6 +93,29 @@ refresh_graphs = function() {
         drawScatterGraph('chart04', devices_data['prop_vs_days_of_use'], ['Proporcion de Pantalla', 'Dias de Uso']);
         drawBarGraph('#chart05', devices_data['h_count'], ['Altura de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
         drawScatterGraph('chart06', devices_data['h_vs_days_of_use'], ['Altura de Pantalla', 'Dias de Uso']);
+        drawBarGraph('#chart06-1', devices_data['h_avg_days_of_use'], ['Altura de Pantalla', 'Promedio de dias'], true);
+        drawBarGraph('#chart07', devices_data['screen_menu'], ['xxx', 'yyy'], true);
+        drawBarGraph('#chart08', devices_data['screen_help'], ['xxx', 'yyy'], true);
+        drawBarGraph('#chart09', devices_data['screen_stat'], ['xxx', 'yyy'], true);
+        drawBarGraph('#chart10', devices_data['screen_shop'], ['xxx', 'yyy'], true);
+        drawBarGraph('#chart11_0', devices_data['all_days'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+        drawBarGraph('#chart11', devices_data['days_cred'], ['day', 'total events'], true);
+        drawBarGraph('#chart12', devices_data['days_phot'], ['day', 'total events'], true);
+        drawBarGraph('#chart13', devices_data['days_help'], ['day', 'total events'], true);
+        drawBarGraph('#chart14', devices_data['days_stat'], ['day', 'total events'], true);
+        drawBarGraph('#chart15', devices_data['days_shop'], ['day', 'total events'], true);
+        drawBarGraph('#chart16', devices_data['days_achi'], ['day', 'total events'], true);
+        drawBarGraph('#chart17', devices_data['days_lead'], ['day', 'total events'], true);
+        drawBarGraph('#chart18_0', devices_data['all_days_2'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+        drawBarGraph('#chart18_1', devices_data['all_days_2_wg'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+        drawBarGraph('#chart18_2', devices_data['all_days_2_ng'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+        drawBarGraph('#chart18', devices_data['days_cred_2'], ['day', 'total events'], true);
+        drawBarGraph('#chart19', devices_data['days_phot_2'], ['day', 'total events'], true);
+        drawBarGraph('#chart20', devices_data['days_help_2'], ['day', 'total events'], true);
+        drawBarGraph('#chart21', devices_data['days_stat_2'], ['day', 'total events'], true);
+        drawBarGraph('#chart22', devices_data['days_shop_2'], ['day', 'total events'], true);
+        drawBarGraph('#chart23', devices_data['days_achi_2'], ['day', 'total events'], true);
+        drawBarGraph('#chart24', devices_data['days_lead_2'], ['day', 'total events'], true);
     }
 };
 
@@ -147,10 +170,12 @@ loss_activity_ajax  = function(){
             drawScatterGraph('chart04', devices_data['prop_vs_days_of_use'], ['Proporcion de Pantalla', 'Dias de Uso']);
             drawBarGraph('#chart05', devices_data['h_count'], ['Altura de pantalla', 'Todos los Usuarios', 'Usuarios 1 dia'], true);
             drawScatterGraph('chart06', devices_data['h_vs_days_of_use'], ['Altura de Pantalla', 'Dias de Uso']);
+            drawBarGraph('#chart06-1', devices_data['h_avg_days_of_use'], ['Altura de Pantalla', 'Promedio de dias'], true);
             drawBarGraph('#chart07', devices_data['screen_menu'], ['xxx', 'yyy'], true);
             drawBarGraph('#chart08', devices_data['screen_help'], ['xxx', 'yyy'], true);
             drawBarGraph('#chart09', devices_data['screen_stat'], ['xxx', 'yyy'], true);
             drawBarGraph('#chart10', devices_data['screen_shop'], ['xxx', 'yyy'], true);
+            drawBarGraph('#chart11_0', devices_data['all_days'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
             drawBarGraph('#chart11', devices_data['days_cred'], ['day', 'total events'], true);
             drawBarGraph('#chart12', devices_data['days_phot'], ['day', 'total events'], true);
             drawBarGraph('#chart13', devices_data['days_help'], ['day', 'total events'], true);
@@ -158,6 +183,16 @@ loss_activity_ajax  = function(){
             drawBarGraph('#chart15', devices_data['days_shop'], ['day', 'total events'], true);
             drawBarGraph('#chart16', devices_data['days_achi'], ['day', 'total events'], true);
             drawBarGraph('#chart17', devices_data['days_lead'], ['day', 'total events'], true);
+            drawBarGraph('#chart18_0', devices_data['all_days_2'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+            drawBarGraph('#chart18_1', devices_data['all_days_2_wg'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+            drawBarGraph('#chart18_2', devices_data['all_days_2_ng'], ['Dias', 'Achievements','CreditScreen','HelpScreen','Leaderboards','PhotoScreen','ShopScreen','StatScreen'], true);
+            drawBarGraph('#chart18', devices_data['days_cred_2'], ['day', 'total events'], true);
+            drawBarGraph('#chart19', devices_data['days_phot_2'], ['day', 'total events'], true);
+            drawBarGraph('#chart20', devices_data['days_help_2'], ['day', 'total events'], true);
+            drawBarGraph('#chart21', devices_data['days_stat_2'], ['day', 'total events'], true);
+            drawBarGraph('#chart22', devices_data['days_shop_2'], ['day', 'total events'], true);
+            drawBarGraph('#chart23', devices_data['days_achi_2'], ['day', 'total events'], true);
+            drawBarGraph('#chart24', devices_data['days_lead_2'], ['day', 'total events'], true);
         },
         error: function(error) {
             console.log('error');

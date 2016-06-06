@@ -156,6 +156,9 @@ class LocalstatsController < ApplicationController
     query = 'SELECT device_height, (last_play_date - first_play_date + 1) AS days_of_use, COUNT(*) AS count FROM unique_devices WHERE valid_device = TRUE AND (device_height / device_width) >= 1 GROUP BY days_of_use, device_height ORDER BY days_of_use ASC, device_height ASC;'
     h_vs_days_of_use = ActiveRecord::Base.connection.execute(query).collect { |r| {x: r['device_height'].to_f.round(4), y: r['days_of_use'].to_i, z: r['count'].to_i} }
 
+    query = 'SELECT A.device_height, AVG(A.days_of_use) as average_d FROM (SELECT device_height, (last_play_date - first_play_date + 1) AS days_of_use FROM unique_devices WHERE valid_device = TRUE AND (device_height / device_width) >= 1) AS A GROUP BY A.device_height ORDER BY A.device_height ASC;'
+    h_avg_days_of_use = (ActiveRecord::Base.connection.execute(query).collect{ |r| [r['device_height'].to_f.round(4), r['average_d'].to_f.round(4)] if r['average_d'].to_f > 3 }).compact
+
     query = 'SELECT Z.days, avg(Z.access_count) AS average FROM (SELECT (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name = \'MenuScreen\') Z GROUP BY Z.days ORDER BY Z.days ASC;'
     screen_menu = ActiveRecord::Base.connection.execute(query).map { |r| [r['days'].to_i, r['average'].to_f.round(4)] }
 
@@ -168,26 +171,101 @@ class LocalstatsController < ApplicationController
     query = 'SELECT Z.days, avg(Z.access_count) AS average FROM (SELECT (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name = \'ShopScreen\') Z GROUP BY Z.days ORDER BY Z.days ASC;'
     screen_shop = ActiveRecord::Base.connection.execute(query).map { |r| [r['days'].to_i, r['average'].to_f.round(4)] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'CreditScreen\' ORDER BY day ASC;'
+    query = 'SELECT screen_name, day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name IN (\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\') AND day > 0 AND day < 8 ORDER BY day ASC, screen_name ASC;'
+    all_days = [['1er dia'],['2ndo dia'],['3er dia'],['4to dia'],['5to dia'],['6to dia'],['7imo dia']]
+    ActiveRecord::Base.connection.execute(query).each do |r|
+      all_days[r['day'].to_i-1] << r['access_count'].to_i
+    end
+
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'CreditScreen\' AND day > 0 ORDER BY day ASC;'
     days_cred = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'PhotoScreen\' ORDER BY day ASC;'
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'PhotoScreen\' AND day > 0 ORDER BY day ASC;'
     days_phot = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'HelpScreen\' ORDER BY day ASC;'
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'HelpScreen\' AND day > 0 ORDER BY day ASC;'
     days_help = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'StatScreen\' ORDER BY day ASC;'
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'StatScreen\' AND day > 0 ORDER BY day ASC;'
     days_stat = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'ShopScreen\' AND day <= 150 ORDER BY day ASC;'
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'ShopScreen\' AND day > 0 AND day <= 150 ORDER BY day ASC;'
     days_shop = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'Achievements\' ORDER BY day ASC;'
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'Achievements\' AND day > 0 ORDER BY day ASC;'
     days_achi = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
 
-    query = 'SELECT day, access_count FROM user_screen_days WHERE screen_name = \'Leaderboards\' ORDER BY day ASC;'
+    query = 'SELECT day, access_count FROM user_screen_days WHERE data_type = 1 AND screen_name = \'Leaderboards\' AND day > 0 ORDER BY day ASC;'
     days_lead = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['access_count'].to_i] }
+
+    query = 'SELECT C.screen_name, C.day, COALESCE(D.county,0) AS county'+
+      ' FROM'+
+      ' (SELECT * FROM (SELECT unnest(ARRAY[1,2,3,4,5,6,7]) AS day) AS A CROSS JOIN (SELECT unnest(ARRAY [\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\']) AS screen_name) AS B) AS C'+
+      ' LEFT JOIN'+
+      ' (SELECT screen_name, day, COUNT(*) AS county'+
+      ' FROM screen_user_days'+
+      '  JOIN (SELECT id, (last_play_date - first_play_date + 1) AS days_of_use FROM unique_devices WHERE (last_play_date - first_play_date + 1) BETWEEN 1 AND 7) AS F'+
+      '  ON screen_user_days.unique_device_id = F.id'+
+      ' WHERE screen_user_days.screen_name IN (\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\') AND day > 0 AND day < 8'+
+      ' GROUP BY day, screen_name) AS D ON C.screen_name = D.screen_name AND C.day = D.day'+
+      ' ORDER BY C.day ASC, C.screen_name ASC;'
+    all_days_2 = [['1 dia'],['2 dias'],['3 dias'],['4 dias'],['5 dias'],['6 dias'],['7 dias']]
+    ActiveRecord::Base.connection.execute(query).each do |r|
+      all_days_2[r['day'].to_i-1] << r['county'].to_i
+    end
+
+    query = 'SELECT C.screen_name, C.day, COALESCE(D.county,0) AS county'+
+        ' FROM'+
+        ' (SELECT * FROM (SELECT unnest(ARRAY[1,2,3,4,5,6,7]) AS day) AS A CROSS JOIN (SELECT unnest(ARRAY [\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\']) AS screen_name) AS B) AS C'+
+        ' LEFT JOIN'+
+        ' (SELECT screen_name, day, COUNT(*) AS county'+
+        ' FROM screen_user_days'+
+        '  JOIN (SELECT id, (last_play_date - first_play_date + 1) AS days_of_use FROM unique_devices WHERE (last_play_date - first_play_date + 1) BETWEEN 1 AND 7) AS F'+
+        '  ON screen_user_days.unique_device_id = F.id'+
+        ' WHERE screen_user_days.screen_name IN (\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\') AND day > 0 AND day < 8 AND unique_user_id != 0'+
+        ' GROUP BY day, screen_name) AS D ON C.screen_name = D.screen_name AND C.day = D.day'+
+        ' ORDER BY C.day ASC, C.screen_name ASC;'
+    all_days_2_wg = [['1 dia'],['2 dias'],['3 dias'],['4 dias'],['5 dias'],['6 dias'],['7 dias']]
+    ActiveRecord::Base.connection.execute(query).each do |r|
+      all_days_2_wg[r['day'].to_i-1] << r['county'].to_i
+    end
+
+    query = 'SELECT C.screen_name, C.day, COALESCE(D.county,0) AS county'+
+        ' FROM'+
+        ' (SELECT * FROM (SELECT unnest(ARRAY[1,2,3,4,5,6,7]) AS day) AS A CROSS JOIN (SELECT unnest(ARRAY [\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\']) AS screen_name) AS B) AS C'+
+        ' LEFT JOIN'+
+        ' (SELECT screen_name, day, COUNT(*) AS county'+
+        ' FROM screen_user_days'+
+        '  JOIN (SELECT id, (last_play_date - first_play_date + 1) AS days_of_use FROM unique_devices WHERE (last_play_date - first_play_date + 1) BETWEEN 1 AND 7) AS F'+
+        '  ON screen_user_days.unique_device_id = F.id'+
+        ' WHERE screen_user_days.screen_name IN (\'Achievements\',\'CreditScreen\',\'HelpScreen\',\'Leaderboards\',\'PhotoScreen\',\'ShopScreen\',\'StatScreen\') AND day > 0 AND day < 8 AND unique_user_id = 0'+
+        ' GROUP BY day, screen_name) AS D ON C.screen_name = D.screen_name AND C.day = D.day'+
+        ' ORDER BY C.day ASC, C.screen_name ASC;'
+    all_days_2_ng = [['1 dia'],['2 dias'],['3 dias'],['4 dias'],['5 dias'],['6 dias'],['7 dias']]
+    ActiveRecord::Base.connection.execute(query).each do |r|
+      all_days_2_ng[r['day'].to_i-1] << r['county'].to_i
+    end
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'CreditScreen\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_cred_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'PhotoScreen\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_phot_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'HelpScreen\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_help_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'StatScreen\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_stat_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'ShopScreen\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_shop_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'Achievements\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_achi_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
+
+    query = 'SELECT day, COUNT(*) AS county FROM screen_user_days WHERE screen_name = \'Leaderboards\' AND day > 0 GROUP BY day ORDER BY day ASC;'
+    days_lead_2 = ActiveRecord::Base.connection.execute(query).map { |r| [r['day'].to_i, r['county'].to_i] }
 
     # query = 'SELECT Z.screen_name, Z.days, avg(Z.access_count) AS average FROM (SELECT screen_name, (unique_devices.last_play_date - unique_devices.first_play_date + 1) as days, access_count FROM user_screen_events JOIN unique_devices ON unique_devices.id = user_screen_events.unique_device_id WHERE screen_name IN
     # (\'StatScreen\',\'Leaderboards\',\'CreditScreen\',\'PhotoScreen\',\'ShopScreen\',\'Achievements\',\'HelpScreen\')) Z GROUP BY Z.screen_name, Z.days ORDER BY Z.screen_name ASC, Z.days ASC;'
@@ -200,17 +278,30 @@ class LocalstatsController < ApplicationController
                                   prop_vs_days_of_use: prop_vs_days_of_use,
                                   h_count: h_count,
                                   h_vs_days_of_use: h_vs_days_of_use,
+                                  h_avg_days_of_use: h_avg_days_of_use,
                                   screen_menu: screen_menu,
                                   screen_help: screen_help,
                                   screen_stat: screen_stat,
                                   screen_shop: screen_shop,
+                                  all_days: all_days,
                                   days_cred: days_cred,
                                   days_phot: days_phot,
                                   days_help: days_help,
                                   days_stat: days_stat,
                                   days_shop: days_shop,
                                   days_achi: days_achi,
-                                  days_lead: days_lead}, status: :ok }
+                                  days_lead: days_lead,
+                                  all_days_2: all_days_2,
+                                  all_days_2_wg: all_days_2_wg,
+                                  all_days_2_ng: all_days_2_ng,
+                                  days_cred_2: days_cred_2,
+                                  days_phot_2: days_phot_2,
+                                  days_help_2: days_help_2,
+                                  days_stat_2: days_stat_2,
+                                  days_shop_2: days_shop_2,
+                                  days_achi_2: days_achi_2,
+                                  days_lead_2: days_lead_2
+      }, status: :ok }
     end
   end
 end
