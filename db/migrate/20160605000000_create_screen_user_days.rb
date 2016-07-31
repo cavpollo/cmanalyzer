@@ -6,6 +6,7 @@ class CreateScreenUserDays < ActiveRecord::Migration
       t.string :screen_name, null: false
       t.integer :day, null: false, default: 0
       t.integer :access_count, null: false, default: 0
+      t.string :version, null: false
 
       t.timestamps null: false
     end

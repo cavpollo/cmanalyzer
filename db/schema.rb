@@ -40,6 +40,7 @@ ActiveRecord::Schema.define(version: 20160605000000) do
     t.string   "screen_name",                  null: false
     t.integer  "day",              default: 0, null: false
     t.integer  "access_count",     default: 0, null: false
+    t.string   "version",                      null: false
     t.datetime "created_at",                   null: false
     t.datetime "updated_at",                   null: false
   end

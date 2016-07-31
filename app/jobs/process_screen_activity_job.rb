@@ -255,6 +255,7 @@ class ProcessScreenActivityJob < ActiveJob::Base
             s_u_d_2.day = days
             s_u_d_2.screen_name = row['screenName']
             s_u_d_2.access_count = 1
+            s_u_d_2.version = row['version']
             s_u_d_2.save!
           end
         else
