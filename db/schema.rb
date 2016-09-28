@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160605000000) do
+ActiveRecord::Schema.define(version: 20160927000000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -24,6 +24,40 @@ ActiveRecord::Schema.define(version: 20160605000000) do
     t.integer  "active_users_count", default: 0, null: false
     t.datetime "created_at",                     null: false
     t.datetime "updated_at",                     null: false
+  end
+
+  create_table "game_events", force: :cascade do |t|
+    t.float    "positiveGameTimeCounter"
+    t.integer  "wrongBlockPenaltyCount"
+    t.string   "colorName"
+    t.integer  "madnessPointegerClicks"
+    t.integer  "blockCol"
+    t.integer  "bombClicks"
+    t.string   "newColorName"
+    t.string   "squareStyle"
+    t.integer  "speed"
+    t.integer  "colorChanges"
+    t.integer  "score"
+    t.integer  "onScreenCount"
+    t.integer  "coinClicks"
+    t.float    "negativeGameTimeCounter"
+    t.integer  "onScreenUnclickedCount"
+    t.integer  "slowClicks"
+    t.integer  "extraPointegerClicks"
+    t.string   "failReason"
+    t.boolean  "highscoreFlag"
+    t.integer  "extraTimeClicks"
+    t.string   "gameTypeName"
+    t.integer  "storedTimeDiff"
+    t.integer  "blockRow"
+    t.date     "game_at"
+    t.integer  "thiefClicks"
+    t.integer  "thiefPenaltYCount"
+    t.string   "version"
+    t.integer  "unique_device_id"
+    t.integer  "unique_user_id"
+    t.datetime "created_at",              null: false
+    t.datetime "updated_at",              null: false
   end
 
   create_table "last_data_loads", force: :cascade do |t|
