@@ -62,7 +62,7 @@ class ProcessGameDataJob < ActiveJob::Base
           g_e.positiveGameTimeCounter = row['positiveGameTimeCounter']
           g_e.wrongBlockPenaltyCount = row['wrongBlockPenaltyCount']
           g_e.colorName = row['colorName']
-          g_e.madnessPointegerClicks = row['madnessPointegerClicks']
+          g_e.madnessPointsClicks = row['madnessPointClicks']
           g_e.blockCol = row['blockCol']
           g_e.bombClicks = row['bombClicks']
           g_e.newColorName = row['newColorName']
@@ -75,7 +75,7 @@ class ProcessGameDataJob < ActiveJob::Base
           g_e.negativeGameTimeCounter = row['negativeGameTimeCounter']
           g_e.onScreenUnclickedCount = row['onScreenUnclickedCount']
           g_e.slowClicks = row['slowClicks']
-          g_e.extraPointegerClicks = row['extraPointegerClicks']
+          g_e.extraPointClicks = row['extraPointClicks']
           g_e.failReason = row['failReason']
           g_e.highscoreFlag = row['highscoreFlag']
           g_e.extraTimeClicks = row['extraTimeClicks']
@@ -84,7 +84,7 @@ class ProcessGameDataJob < ActiveJob::Base
           g_e.blockRow = row['blockRow']
           g_e.game_at = keen_date
           g_e.thiefClicks = row['thiefClicks']
-          g_e.thiefPenaltYCount = row['thiefPenaltYCount']
+          g_e.thiefPenaltyCount = row['thiefPenaltYCount']
           g_e.version = row['version']
           g_e.save!
         else

@@ -4,7 +4,7 @@ class CreateGameEvent < ActiveRecord::Migration
       t.float :positiveGameTimeCounter
       t.integer :wrongBlockPenaltyCount
       t.string :colorName
-      t.integer :madnessPointegerClicks
+      t.integer :madnessPointsClicks
       t.integer :blockCol
       t.integer :bombClicks
       t.string :newColorName
@@ -17,16 +17,16 @@ class CreateGameEvent < ActiveRecord::Migration
       t.float :negativeGameTimeCounter
       t.integer :onScreenUnclickedCount
       t.integer :slowClicks
-      t.integer :extraPointegerClicks
+      t.integer :extraPointClicks
       t.string :failReason
       t.boolean :highscoreFlag
       t.integer :extraTimeClicks
       t.string :gameTypeName
       t.integer :storedTimeDiff
       t.integer :blockRow
-      t.date :game_at
+      t.datetime :game_at
       t.integer :thiefClicks
-      t.integer :thiefPenaltYCount
+      t.integer :thiefPenaltyCount
       t.string :version
       t.references :unique_device
       t.references :unique_user
