@@ -3,5 +3,11 @@
 All you need to know:
 <tt>rails s</tt>
 <tt>rails c</tt>
+
 ActiveRecord::Base.logger.level = 1
+
+ProcessScreenActivityJob.perform_later
+ProcessDevicesVersionsAndUsersJob.perform_later
+ProcessDevicesVersionsAndUsersOldJob.perform_later
+ProcessGameDataJob.perform_later
 ProcessScreenActivityJob.perform_later

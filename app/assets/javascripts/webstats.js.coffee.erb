@@ -1,6 +1,6 @@
 client = null
 eventCollection = ''
-startDate = moment().subtract(6, 'days')
+startDate = moment('03/06/2014', 'DD/MM/YYYY')
 endDate = moment().add(1, 'days')
 
 ready = ->
@@ -34,10 +34,10 @@ ready = ->
 	$('#daterange span').html(moment().subtract(7, 'days').format('D/MM/YYYY') + ' - ' + moment().format('D/MM/YYYY'));
 	$('#daterange').daterangepicker {
 			format: 'DD/MM/YYYY',
-			startDate: moment().subtract(7, 'days').format('DD/MM/YYYY'),
+			startDate: moment('02/06/2014', 'DD/MM/YYYY').format('D/MM/YYYY'),
 			endDate: moment().format('DD/MM/YYYY'),
-			minDate: '23/07/2014',
-			maxDate: '31/12/2016',
+			minDate: '02/06/2014',
+			maxDate: moment().add(1, 'days').format('DD/MM/YYYY'),
 			dateLimit: { years: 5 },
 			showDropdowns: true,
 			showWeekNumbers: false,
